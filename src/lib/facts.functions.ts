@@ -32,9 +32,13 @@ export const getTodayFact = createServerFn({ method: "GET" }).handler(
 
     let fact = await ensureDailyPick(date);
     if (!fact) {
-      // Library exhausted: generate before serving.
-      await topUpFacts(15, 8);
-      fact = await ensureDailyPick(date);
+      // Library exhausted: try to generate before serving, but never fail the page.
+      try {
+        await topUpFacts(15, 8);
+        fact = await ensureDailyPick(date);
+      } catch (error) {
+        console.error("fact generation failed", error);
+      }
     } else if ((await countUnusedFacts()) < 15) {
       // Warm the library in the background; failures are non-fatal.
       void topUpFacts(15, 8).catch((error) => console.error("fact top-up failed", error));

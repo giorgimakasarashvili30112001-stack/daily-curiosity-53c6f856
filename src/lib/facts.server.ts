@@ -262,9 +262,21 @@ export async function topUpFacts(minUnused = 15, batchSize = 8): Promise<number>
     }))
     .filter((f) => f.slug.length > 0);
 
-  if (rows.length === 0) return 0;
+  // Drop titles that already exist (or repeat within the batch) so the daily
+  // rotation can never serve the same explainer twice under a different slug.
+  const normalize = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const seen = new Set(existingTitles.map(normalize));
+  const fresh = rows.filter((f) => {
+    const key = normalize(f.title);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
-  const { error } = await supabaseAdmin.from("facts").upsert(rows, { onConflict: "slug" });
+  if (fresh.length === 0) return 0;
+
+  const { error } = await supabaseAdmin.from("facts").upsert(fresh, { onConflict: "slug" });
   if (error) throw error;
-  return rows.length;
+  return fresh.length;
+
 }

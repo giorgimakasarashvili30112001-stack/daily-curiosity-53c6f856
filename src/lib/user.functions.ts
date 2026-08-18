@@ -21,6 +21,7 @@ export const getProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<ProfileState & { savedCount: number }> => {
     const { supabase, userId } = context;
+    const { todayUtc } = await import("./facts.server");
 
     const [{ data: profile }, { count }] = await Promise.all([
       supabase
@@ -31,14 +32,40 @@ export const getProfile = createServerFn({ method: "GET" })
       supabase.from("favorites").select("fact_id", { count: "exact", head: true }),
     ]);
 
+    let streak = profile?.streak_count ?? 0;
+    let longestStreak = profile?.longest_streak ?? 0;
+    let lastSeenDate = profile?.last_seen_date ?? null;
+
+    // First ever visit counts as day one of the streak; every day after that
+    // the streak only grows through a correct quiz answer.
+    if (!lastSeenDate && streak === 0) {
+      const today = todayUtc();
+      streak = 1;
+      longestStreak = Math.max(longestStreak, 1);
+      lastSeenDate = today;
+      await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            streak_count: streak,
+            longest_streak: longestStreak,
+            last_seen_date: today,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+    }
+
     return {
       displayName: profile?.display_name ?? null,
-      streak: profile?.streak_count ?? 0,
-      longestStreak: profile?.longest_streak ?? 0,
-      lastSeenDate: profile?.last_seen_date ?? null,
+      streak,
+      longestStreak,
+      lastSeenDate,
       savedCount: count ?? 0,
     };
   });
+
 
 export const updateDisplayName = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

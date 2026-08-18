@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck } from "lucide-react";
@@ -21,6 +21,11 @@ export function FactCard({
   initiallySaved?: boolean;
 }) {
   const [saved, setSaved] = useState(initiallySaved);
+
+  // Keep in sync once the saved-state query resolves after mount.
+  useEffect(() => {
+    setSaved(initiallySaved);
+  }, [initiallySaved, fact.id]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toggle = useServerFn(toggleFavorite);

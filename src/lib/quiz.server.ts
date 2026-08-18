@@ -79,8 +79,8 @@ export async function generateQuestion(
   fact: FactLike,
   questionIndex = 0,
 ): Promise<QuizQuestionRow | null> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+  const apiKey = process.env["GEMINI_API_KEY"];
+  if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
   const stepText = fact.steps.map((s) => `${s.heading}: ${s.body}`).join("\n");
   const asked = await previousPrompts(fact.id, questionIndex);
@@ -88,31 +88,33 @@ export async function generateQuestion(
     ? `\n\nThese questions were already asked about this explainer — write a clearly different one, in the same style, testing another part of the mechanism:\n${asked.map((p) => `- ${p}`).join("\n")}`
     : "";
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Lovable-API-Key": apiKey },
-    body: JSON.stringify({
-      model: "openai/gpt-5.6-sol",
-      reasoning_effort: "none",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You write one crisp multiple-choice comprehension question about a short explainer. Test understanding of the mechanism, not trivia recall. No emoji.",
+  const response = await fetch(
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [
+            {
+              text: "You write one crisp multiple-choice comprehension question about a short explainer. Test understanding of the mechanism, not trivia recall. No emoji.",
+            },
+          ],
         },
-        {
-          role: "user",
-          content: `Explainer title: ${fact.title}\nIntro: ${fact.intro}\nSteps:\n${stepText}\nSurprising detail: ${fact.surprising_detail}\n\nWrite one question with exactly 4 short options (under 80 characters each), one clearly correct, three plausible but wrong. correct_index is the 0-based index of the correct option. explanation is one sentence saying why it's right.${avoid}`,
-        },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "quiz_question",
-          strict: true,
-          schema: {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `Explainer title: ${fact.title}\nIntro: ${fact.intro}\nSteps:\n${stepText}\nSurprising detail: ${fact.surprising_detail}\n\nWrite one question with exactly 4 short options (under 80 characters each), one clearly correct, three plausible but wrong. correct_index is the 0-based index of the correct option. explanation is one sentence saying why it's right.${avoid}`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
             type: "object",
-            additionalProperties: false,
             properties: {
               prompt: { type: "string" },
               options: { type: "array", items: { type: "string" } },
@@ -122,17 +124,19 @@ export async function generateQuestion(
             required: ["prompt", "options", "correct_index", "explanation"],
           },
         },
-      },
-    }),
-  });
+      }),
+    },
+  );
 
   if (!response.ok) {
     console.error("quiz generation failed", response.status, await response.text());
     return loadQuestion(fact.id, questionIndex);
   }
 
-  const payload = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-  const content = payload.choices?.[0]?.message?.content;
+  const payload = (await response.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  const content = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("");
   if (!content) return loadQuestion(fact.id, questionIndex);
 
   let parsed: GeneratedQuiz;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck } from "lucide-react";
@@ -21,6 +21,11 @@ export function FactCard({
   initiallySaved?: boolean;
 }) {
   const [saved, setSaved] = useState(initiallySaved);
+
+  // Keep in sync once the saved-state query resolves after mount.
+  useEffect(() => {
+    setSaved(initiallySaved);
+  }, [initiallySaved, fact.id]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const toggle = useServerFn(toggleFavorite);
@@ -93,10 +98,15 @@ export function FactCard({
             type="button"
             onClick={onSave}
             disabled={mutation.isPending}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full border border-border bg-secondary px-4 py-3 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-muted disabled:opacity-60"
+            aria-pressed={saved}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-full border px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
+              saved
+                ? "border-primary/50 bg-primary/15 text-primary"
+                : "border-border bg-secondary text-secondary-foreground hover:bg-muted"
+            }`}
           >
             {saved ? (
-              <BookmarkCheck className="h-4 w-4 text-primary" aria-hidden="true" />
+              <BookmarkCheck className="h-4 w-4 fill-primary text-primary" aria-hidden="true" />
             ) : (
               <Bookmark className="h-4 w-4" aria-hidden="true" />
             )}

@@ -179,26 +179,26 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       coins += 1;
 
       if (profile?.last_seen_date !== quizDate) {
-      const dayBefore = (offset: number) => {
-        const d = new Date(`${quizDate}T00:00:00Z`);
-        d.setUTCDate(d.getUTCDate() - offset);
-        return d.toISOString().slice(0, 10);
-      };
-      const last = profile?.last_seen_date ?? null;
+        const dayBefore = (offset: number) => {
+          const d = new Date(`${quizDate}T00:00:00Z`);
+          d.setUTCDate(d.getUTCDate() - offset);
+          return d.toISOString().slice(0, 10);
+        };
+        const last = profile?.last_seen_date ?? null;
 
-      if (last === dayBefore(1)) {
-        streak = streak + 1;
-      } else if (last === dayBefore(2) && streak > 0 && coins >= STREAK_SAVE_COST) {
-        // One missed day — automatically repaired with coins.
-        coins -= STREAK_SAVE_COST;
-        streak = streak + 1;
-        streakSaved = true;
-      } else {
-        streak = 1;
-      }
+        if (last === dayBefore(1)) {
+          streak = streak + 1;
+        } else if (last === dayBefore(2) && streak > 0 && coins >= STREAK_SAVE_COST) {
+          // One missed day — automatically repaired with coins.
+          coins -= STREAK_SAVE_COST;
+          streak = streak + 1;
+          streakSaved = true;
+        } else {
+          streak = 1;
+        }
 
-      longestStreak = Math.max(longestStreak, streak);
-      streakExtended = true;
+        longestStreak = Math.max(longestStreak, streak);
+        streakExtended = true;
       }
 
       await context.supabase.from("profiles").upsert(

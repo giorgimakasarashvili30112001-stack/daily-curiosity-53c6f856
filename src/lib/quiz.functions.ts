@@ -172,16 +172,19 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     let streakSaved = false;
     let coinsEarned = 0;
 
-    if (isCorrect && profile?.last_seen_date !== quizDate) {
+    if (isCorrect) {
+      // Every newly recorded correct answer earns a coin, including the first
+      // quiz answer on the day the initial visit creates the streak.
+      coinsEarned = 1;
+      coins += 1;
+
+      if (profile?.last_seen_date !== quizDate) {
       const dayBefore = (offset: number) => {
         const d = new Date(`${quizDate}T00:00:00Z`);
         d.setUTCDate(d.getUTCDate() - offset);
         return d.toISOString().slice(0, 10);
       };
       const last = profile?.last_seen_date ?? null;
-
-      coinsEarned = 1;
-      coins += 1;
 
       if (last === dayBefore(1)) {
         streak = streak + 1;
@@ -196,6 +199,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
 
       longestStreak = Math.max(longestStreak, streak);
       streakExtended = true;
+      }
 
       await context.supabase.from("profiles").upsert(
         {

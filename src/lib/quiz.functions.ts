@@ -179,20 +179,26 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       coins += 1;
 
       if (profile?.last_seen_date !== quizDate) {
-        const dayBefore = (offset: number) => {
-          const d = new Date(`${quizDate}T00:00:00Z`);
-          d.setUTCDate(d.getUTCDate() - offset);
-          return d.toISOString().slice(0, 10);
-        };
         const last = profile?.last_seen_date ?? null;
+        const daysSince = last
+          ? Math.round(
+              (Date.parse(`${quizDate}T00:00:00Z`) - Date.parse(`${last}T00:00:00Z`)) / 86400000,
+            )
+          : null;
 
-        if (last === dayBefore(1)) {
+        if (daysSince === 1) {
           streak = streak + 1;
-        } else if (last === dayBefore(2) && streak > 0 && coins >= STREAK_SAVE_COST) {
-          // One missed day — automatically repaired with coins.
-          coins -= STREAK_SAVE_COST;
-          streak = streak + 1;
-          streakSaved = true;
+        } else if (daysSince !== null && daysSince > 1 && streak > 0) {
+          // Each missed day can be repaired with coins; all of them must be covered.
+          const missedDays = daysSince - 1;
+          const cost = missedDays * STREAK_SAVE_COST;
+          if (coins >= cost) {
+            coins -= cost;
+            streak = streak + 1;
+            streakSaved = true;
+          } else {
+            streak = 1;
+          }
         } else {
           streak = 1;
         }
@@ -200,6 +206,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
         longestStreak = Math.max(longestStreak, streak);
         streakExtended = true;
       }
+
 
       await context.supabase.from("profiles").upsert(
         {

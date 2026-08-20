@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Coins } from "lucide-react";
+import { StreakIcon } from "@/components/StreakIcon";
 import { useServerFn } from "@tanstack/react-start";
 import { ShareSheet } from "@/components/ShareSheet";
 import { AppShell } from "@/components/AppShell";
@@ -67,7 +68,10 @@ function ProfilePage() {
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           Current streak
         </p>
-        <p className="mt-2 text-display text-5xl text-primary">{data?.streak ?? 0}</p>
+        <div className="mt-2 flex items-center justify-center gap-2">
+          <StreakIcon streak={data?.streak} className="h-10 w-10" />
+          <p className="text-display text-5xl text-primary">{data?.streak ?? 0}</p>
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {data?.streak === 1 ? "correct day in a row" : "correct days in a row"}
         </p>

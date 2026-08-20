@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Flame } from "lucide-react";
+import { StreakIcon } from "./StreakIcon";
 
 export function AppHeader({
   eyebrow,
@@ -18,7 +18,7 @@ export function AppHeader({
       </Link>
       {typeof streak === "number" && streak > 0 ? (
         <span className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold text-primary">
-          <Flame className="h-4 w-4" aria-hidden="true" />
+          <StreakIcon streak={streak} className="h-4 w-4" />
           {streak}
         </span>
       ) : null}

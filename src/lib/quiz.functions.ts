@@ -173,10 +173,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     let coinsEarned = 0;
 
     if (isCorrect) {
-      // Every newly recorded correct answer earns a coin, including the first
-      // quiz answer on the day the initial visit creates the streak.
       coinsEarned = 1;
-      coins += 1;
 
       if (profile?.last_seen_date !== quizDate) {
         const last = profile?.last_seen_date ?? null;
@@ -192,6 +189,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           // Each missed day can be repaired with coins; all of them must be covered.
           const missedDays = daysSince - 1;
           const cost = missedDays * STREAK_SAVE_COST;
+          // Affordability is checked against the balance before today's reward.
           if (coins >= cost) {
             coins -= cost;
             streak = streak + 1;
@@ -203,22 +201,26 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
           streak = 1;
         }
 
+        // Award today's coin after save logic so it cannot be consumed by missed-day charges,
+        // then clamp the balance so it never drops below zero.
+        coins += 1;
+        coins = Math.max(0, coins);
+
         longestStreak = Math.max(longestStreak, streak);
         streakExtended = true;
+
+        await context.supabase.from("profiles").upsert(
+          {
+            id: context.userId,
+            streak_count: streak,
+            longest_streak: longestStreak,
+            last_seen_date: quizDate,
+            coins,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
       }
-
-
-      await context.supabase.from("profiles").upsert(
-        {
-          id: context.userId,
-          streak_count: streak,
-          longest_streak: longestStreak,
-          last_seen_date: quizDate,
-          coins,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      );
     }
 
     return {

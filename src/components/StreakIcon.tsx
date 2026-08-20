@@ -27,7 +27,7 @@ export function StreakIcon({
     return <Flame className={className} aria-hidden="true" />;
   }
 
-  const level = levels.find((l) => value <= l.max) ?? levels[levels.length - 1];
+  const level = levels.find((l) => value <= l.max) ?? levels[levels.length - 1]!;
 
   return (
     <img

@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedSavedRouteImport } from './routes/_authenticated/saved'
 import { Route as FactSlugRouteImport } from './routes/fact.$slug'
+import { Route as ApiPublicPrewarmRouteImport } from './routes/api/public/prewarm'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,6 +52,11 @@ const FactSlugRoute = FactSlugRouteImport.update({
   path: '/fact/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPrewarmRoute = ApiPublicPrewarmRouteImport.update({
+  id: '/api/public/prewarm',
+  path: '/api/public/prewarm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthenticatedProfileRoute
   '/saved': typeof AuthenticatedSavedRoute
   '/fact/$slug': typeof FactSlugRoute
+  '/api/public/prewarm': typeof ApiPublicPrewarmRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthenticatedProfileRoute
   '/saved': typeof AuthenticatedSavedRoute
   '/fact/$slug': typeof FactSlugRoute
+  '/api/public/prewarm': typeof ApiPublicPrewarmRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,12 +85,27 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/saved': typeof AuthenticatedSavedRoute
   '/fact/$slug': typeof FactSlugRoute
+  '/api/public/prewarm': typeof ApiPublicPrewarmRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/archive' | '/auth' | '/profile' | '/saved' | '/fact/$slug'
+  fullPaths:
+    | '/'
+    | '/archive'
+    | '/auth'
+    | '/profile'
+    | '/saved'
+    | '/fact/$slug'
+    | '/api/public/prewarm'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/archive' | '/auth' | '/profile' | '/saved' | '/fact/$slug'
+  to:
+    | '/'
+    | '/archive'
+    | '/auth'
+    | '/profile'
+    | '/saved'
+    | '/fact/$slug'
+    | '/api/public/prewarm'
   id:
     | '__root__'
     | '/'
@@ -92,6 +115,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/saved'
     | '/fact/$slug'
+    | '/api/public/prewarm'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,6 +124,7 @@ export interface RootRouteChildren {
   ArchiveRoute: typeof ArchiveRoute
   AuthRoute: typeof AuthRoute
   FactSlugRoute: typeof FactSlugRoute
+  ApiPublicPrewarmRoute: typeof ApiPublicPrewarmRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -153,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FactSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/prewarm': {
+      id: '/api/public/prewarm'
+      path: '/api/public/prewarm'
+      fullPath: '/api/public/prewarm'
+      preLoaderRoute: typeof ApiPublicPrewarmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -175,6 +207,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArchiveRoute: ArchiveRoute,
   AuthRoute: AuthRoute,
   FactSlugRoute: FactSlugRoute,
+  ApiPublicPrewarmRoute: ApiPublicPrewarmRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

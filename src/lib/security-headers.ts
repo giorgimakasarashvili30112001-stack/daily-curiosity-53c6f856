@@ -5,6 +5,8 @@
 const CSP_DIRECTIVES = [
   "default-src 'self'",
   "base-uri 'self'",
+  "manifest-src 'self'",
+
   "object-src 'none'",
   "form-action 'self'",
   // SSR hydration + Vite inject inline scripts; the Lovable editor script is CDN hosted.

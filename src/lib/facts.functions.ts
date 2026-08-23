@@ -7,7 +7,6 @@ export type Fact = {
   id: string;
   title: string;
   slug: string;
-  question_type: string;
   category: string;
   hook: string;
   intro: string;

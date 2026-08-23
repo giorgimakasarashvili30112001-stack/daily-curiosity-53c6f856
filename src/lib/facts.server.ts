@@ -6,7 +6,6 @@ export type Fact = {
   id: string;
   title: string;
   slug: string;
-  question_type: string;
   category: string;
   hook: string;
   intro: string;
@@ -15,7 +14,7 @@ export type Fact = {
 };
 
 export const FACT_COLUMNS =
-  "id, title, slug, question_type, category, hook, intro, steps, surprising_detail";
+  "id, title, slug, category, hook, intro, steps, surprising_detail";
 
 export function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
@@ -34,7 +33,6 @@ export function toFact(row: Record<string, unknown>): Fact {
     id: String(row["id"]),
     title: String(row["title"]),
     slug: String(row["slug"]),
-    question_type: String(row["question_type"]),
     category: String(row["category"]),
     hook: String(row["hook"]),
     intro: String(row["intro"]),
@@ -112,7 +110,6 @@ export async function ensureDailyPick(date: string): Promise<Fact | null> {
 
 type GeneratedFact = {
   title: string;
-  question_type: string;
   category: string;
   hook: string;
   intro: string;
@@ -159,7 +156,7 @@ export async function topUpFacts(minUnused = 15, batchSize = 8): Promise<number>
         },
         {
           role: "user",
-          content: `Write ${batchSize} new explainers. Each title is either "How X works" or "What X means" (question_type "how" or "what"). Categories must come from: ${CATEGORIES.join(", ")}. hook = one punchy sentence under 90 characters. intro = two sentences of plain-language setup. steps = exactly 4 items, heading under 6 words, body 1-2 sentences explaining the real mechanism. surprising_detail = one genuinely surprising true fact. Topics must be concrete everyday curiosities. Do NOT reuse any of these existing titles: ${existingTitles.join(" | ")}`,
+          content: `Write ${batchSize} new explainers. Each title is either "How X works" or "What X means". Categories must come from: ${CATEGORIES.join(", ")}. hook = one punchy sentence under 90 characters. intro = two sentences of plain-language setup. steps = exactly 4 items, heading under 6 words, body 1-2 sentences explaining the real mechanism. surprising_detail = one genuinely surprising true fact. Topics must be concrete everyday curiosities. Do NOT reuse any of these existing titles: ${existingTitles.join(" | ")}`,
         },
       ],
       response_format: {
@@ -178,7 +175,6 @@ export async function topUpFacts(minUnused = 15, batchSize = 8): Promise<number>
                   additionalProperties: false,
                   properties: {
                     title: { type: "string" },
-                    question_type: { type: "string", enum: ["how", "what"] },
                     category: { type: "string", enum: CATEGORIES },
                     hook: { type: "string" },
                     intro: { type: "string" },
@@ -195,7 +191,6 @@ export async function topUpFacts(minUnused = 15, batchSize = 8): Promise<number>
                   },
                   required: [
                     "title",
-                    "question_type",
                     "category",
                     "hook",
                     "intro",
@@ -239,19 +234,16 @@ export async function topUpFacts(minUnused = 15, batchSize = 8): Promise<number>
         f.title.length > 3 &&
         Array.isArray(f.steps) &&
         f.steps.length > 0 &&
-        CATEGORIES.includes(f.category) &&
-        (f.question_type === "how" || f.question_type === "what"),
+        CATEGORIES.includes(f.category),
     )
     .map((f) => ({
       title: f.title.trim(),
       slug: slugify(f.title),
-      question_type: f.question_type,
       category: f.category,
       hook: f.hook,
       intro: f.intro,
       steps: normalizeSteps(f.steps),
       surprising_detail: f.surprising_detail,
-      source: "ai",
     }))
     .filter((f) => f.slug.length > 0);
 

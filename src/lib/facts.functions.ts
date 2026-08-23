@@ -50,7 +50,7 @@ export const getTodayFact = createServerFn({ method: "GET" }).handler(
 
 export const getArchive = createServerFn({ method: "GET" }).handler(
   async (): Promise<ArchiveEntry[]> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { dbAdmin: supabaseAdmin } = await import("./db.server");
     const { todayUtc } = await import("./facts.server");
 
     const { data } = await supabaseAdmin
@@ -74,7 +74,7 @@ export const getArchive = createServerFn({ method: "GET" }).handler(
 export const getFactBySlug = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ slug: z.string().min(1) }).parse(input))
   .handler(async ({ data }): Promise<{ fact: Fact; pickDate: string | null } | null> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { dbAdmin: supabaseAdmin } = await import("./db.server");
     const { FACT_COLUMNS, toFact, todayUtc } = await import("./facts.server");
 
     const { data: row } = await supabaseAdmin

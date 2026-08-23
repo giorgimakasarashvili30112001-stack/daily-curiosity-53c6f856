@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { dbAdmin as supabaseAdmin } from "./db.server";
 
 import { ensureDailyPick, todayUtc, topUpFacts, countUnusedFacts } from "./facts.server";
 import { loadQuestion, getQuestionForFact } from "./quiz.server";

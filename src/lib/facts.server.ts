@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { dbAdmin as supabaseAdmin } from "./db.server";
 
 export type FactStep = { heading: string; body: string };
 

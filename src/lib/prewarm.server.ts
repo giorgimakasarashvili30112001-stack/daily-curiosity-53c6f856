@@ -68,19 +68,20 @@ export async function prewarmTomorrow(): Promise<PrewarmResult> {
   for (const pickDate of [date, tomorrow]) {
     try {
       const { data: pick } = await supabaseAdmin
-        .from("daily_picks")
-        .select("fact_id")
+        .from("facts")
+        .select("id")
         .eq("pick_date", pickDate)
         .maybeSingle();
-      if (!pick?.fact_id) {
+      if (!pick?.id) {
         result.skipped.push(`no-pick-${pickDate}`);
         continue;
       }
-      if (await loadQuestion(pick.fact_id, 0)) {
+      if (await loadQuestion(pick.id, 0)) {
         result.skipped.push(`question-ready-${pickDate}`);
         continue;
       }
-      const question = await getQuestionForFact(pick.fact_id, 0);
+      const question = await getQuestionForFact(pick.id, 0);
+
       if (question) result.questionsGenerated += 1;
     } catch (error) {
       result.errors.push(`quiz ${pickDate}: ${(error as Error).message}`);

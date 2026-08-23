@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { dbAdmin as supabaseAdmin } from "./db.server";
 
 export type QuizQuestionRow = {
   fact_id: string;
@@ -178,14 +178,15 @@ export async function generateQuestion(
 }
 
 async function loadFact(factDate: string): Promise<{ fact: FactLike; slug: string } | null> {
-  const { data: pick } = await supabaseAdmin
-    .from("daily_picks")
-    .select("fact_id, facts:fact_id (id, slug, title, intro, steps, surprising_detail)")
+  const { data } = await supabaseAdmin
+    .from("facts")
+    .select("id, slug, title, intro, steps, surprising_detail")
     .eq("pick_date", factDate)
     .maybeSingle();
 
-  const raw = pick?.facts as Record<string, unknown> | null | undefined;
+  const raw = data as Record<string, unknown> | null | undefined;
   if (!raw) return null;
+
 
   return {
     slug: String(raw["slug"]),

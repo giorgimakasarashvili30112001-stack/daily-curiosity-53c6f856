@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { dbAdmin as supabaseAdmin } from "./db.server";
 
 export type FactStep = { heading: string; body: string };
 
@@ -51,45 +51,35 @@ function slugify(title: string): string {
     .slice(0, 80);
 }
 
-async function usedFactIds(): Promise<string[]> {
-  const { data } = await supabaseAdmin.from("daily_picks").select("fact_id");
-  return (data ?? []).map((r) => r.fact_id);
-}
-
 export async function countUnusedFacts(): Promise<number> {
-  const used = await usedFactIds();
-  let query = supabaseAdmin.from("facts").select("id", { count: "exact", head: true });
-  if (used.length > 0) query = query.not("id", "in", `(${used.join(",")})`);
-  const { count } = await query;
+  const { count } = await supabaseAdmin
+    .from("facts")
+    .select("id", { count: "exact", head: true })
+    .is("pick_date", null);
   return count ?? 0;
 }
 
-/** Returns the fact featured on `date`, creating the pick if it does not exist yet. */
+/** Returns the fact scheduled for `date`, scheduling one if none exists yet. */
 export async function ensureDailyPick(date: string): Promise<Fact | null> {
   const existing = await supabaseAdmin
-    .from("daily_picks")
-    .select(`fact_id, facts:fact_id (${FACT_COLUMNS})`)
+    .from("facts")
+    .select(FACT_COLUMNS)
     .eq("pick_date", date)
     .maybeSingle();
-
-  const existingFact = existing.data?.facts as Record<string, unknown> | null | undefined;
-  if (existingFact) return toFact(existingFact);
-
-  const used = await usedFactIds();
+  if (existing.data) return toFact(existing.data as Record<string, unknown>);
 
   // Avoid two days in a row from the same category.
   const yesterday = new Date(`${date}T00:00:00Z`);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   const prev = await supabaseAdmin
-    .from("daily_picks")
-    .select("facts:fact_id (category)")
+    .from("facts")
+    .select("category")
     .eq("pick_date", yesterday.toISOString().slice(0, 10))
     .maybeSingle();
-  const prevCategory = (prev.data?.facts as { category?: string } | null)?.category ?? null;
+  const prevCategory = (prev.data as { category?: string } | null)?.category ?? null;
 
   const pickCandidate = async (excludeCategory: string | null) => {
-    let q = supabaseAdmin.from("facts").select(FACT_COLUMNS).limit(1);
-    if (used.length > 0) q = q.not("id", "in", `(${used.join(",")})`);
+    let q = supabaseAdmin.from("facts").select(FACT_COLUMNS).is("pick_date", null).limit(1);
     if (excludeCategory) q = q.neq("category", excludeCategory);
     // Rotate deterministically by date so the same fact is served to everyone.
     const seed = Number(date.replace(/-/g, "")) % 2 === 0;
@@ -103,19 +93,22 @@ export async function ensureDailyPick(date: string): Promise<Fact | null> {
   if (!candidate) return null;
 
   const row = candidate as Record<string, unknown>;
+  // Only claim the row if it is still unscheduled; a parallel request may have won.
   await supabaseAdmin
-    .from("daily_picks")
-    .upsert({ pick_date: date, fact_id: String(row["id"]) }, { onConflict: "pick_date" });
+    .from("facts")
+    .update({ pick_date: date })
+    .eq("id", String(row["id"]))
+    .is("pick_date", null);
 
   // Re-read so concurrent requests converge on the stored pick.
   const settled = await supabaseAdmin
-    .from("daily_picks")
-    .select(`facts:fact_id (${FACT_COLUMNS})`)
+    .from("facts")
+    .select(FACT_COLUMNS)
     .eq("pick_date", date)
     .maybeSingle();
-  const settledFact = settled.data?.facts as Record<string, unknown> | null | undefined;
-  return settledFact ? toFact(settledFact) : toFact(row);
+  return settled.data ? toFact(settled.data as Record<string, unknown>) : null;
 }
+
 
 type GeneratedFact = {
   title: string;

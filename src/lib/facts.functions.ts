@@ -54,27 +54,20 @@ export const getArchive = createServerFn({ method: "GET" }).handler(
     const { todayUtc } = await import("./facts.server");
 
     const { data } = await supabaseAdmin
-      .from("daily_picks")
-      .select("pick_date, facts:fact_id (slug, title, category, hook)")
+      .from("facts")
+      .select("pick_date, slug, title, category, hook")
+      .not("pick_date", "is", null)
       .lte("pick_date", todayUtc())
       .order("pick_date", { ascending: false })
       .limit(120);
 
-    return (data ?? [])
-      .map((row) => {
-        const fact = row.facts as
-          | { slug: string; title: string; category: string; hook: string }
-          | null;
-        if (!fact) return null;
-        return {
-          pick_date: row.pick_date,
-          slug: fact.slug,
-          title: fact.title,
-          category: fact.category,
-          hook: fact.hook,
-        };
-      })
-      .filter((row): row is ArchiveEntry => row !== null);
+    return (data ?? []).map((row) => ({
+      pick_date: String(row.pick_date),
+      slug: row.slug,
+      title: row.title,
+      category: row.category,
+      hook: row.hook,
+    }));
   },
 );
 
@@ -86,22 +79,16 @@ export const getFactBySlug = createServerFn({ method: "GET" })
 
     const { data: row } = await supabaseAdmin
       .from("facts")
-      .select(FACT_COLUMNS)
+      .select(`${FACT_COLUMNS}, pick_date`)
       .eq("slug", data.slug)
-      .maybeSingle();
-    if (!row) return null;
-
-    const fact = toFact(row as Record<string, unknown>);
-
-    const { data: pick } = await supabaseAdmin
-      .from("daily_picks")
-      .select("pick_date")
-      .eq("fact_id", fact.id)
+      .not("pick_date", "is", null)
       .lte("pick_date", todayUtc())
       .maybeSingle();
 
     // Only explainers that have already been featured are publicly readable.
-    if (!pick) return null;
+    if (!row) return null;
 
-    return { fact, pickDate: pick.pick_date };
+    const record = row as Record<string, unknown>;
+    return { fact: toFact(record), pickDate: String(record["pick_date"]) };
   });
+

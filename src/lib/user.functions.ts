@@ -1,13 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { STREAK_SAVE_COST } from "./quiz.constants";
 
 export type ProfileState = {
   displayName: string | null;
   streak: number;
   longestStreak: number;
   lastSeenDate: string | null;
+  coins: number;
+  streakSaved?: boolean;
+  streakLost?: boolean;
 };
+
 
 export type SavedFact = {
   slug: string;

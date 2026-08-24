@@ -3,11 +3,16 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getArchive } from "@/lib/facts.functions";
+import { FACT_GC_TIME, msUntilUtcMidnight } from "@/lib/cache-time";
 
 const archiveQuery = queryOptions({
   queryKey: ["archive"],
   queryFn: () => getArchive(),
+  // Served straight from the device cache until a new day starts.
+  staleTime: msUntilUtcMidnight(),
+  gcTime: FACT_GC_TIME,
 });
+
 
 export const Route = createFileRoute("/archive")({
   loader: ({ context }) => context.queryClient.ensureQueryData(archiveQuery),

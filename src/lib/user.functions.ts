@@ -31,7 +31,7 @@ export const getProfile = createServerFn({ method: "GET" })
     const [{ data: profile }, { count }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("display_name, streak_count, longest_streak, last_seen_date")
+        .select("display_name, streak_count, longest_streak, last_seen_date, coins")
         .eq("id", userId)
         .maybeSingle(),
       supabase.from("favorites").select("fact_id", { count: "exact", head: true }),
@@ -40,26 +40,62 @@ export const getProfile = createServerFn({ method: "GET" })
     let streak = profile?.streak_count ?? 0;
     let longestStreak = profile?.longest_streak ?? 0;
     let lastSeenDate = profile?.last_seen_date ?? null;
+    let coins = profile?.coins ?? 0;
+    let streakSaved = false;
+    let streakLost = false;
+
+    const today = todayUtc();
 
     // First ever visit counts as day one of the streak; every day after that
     // the streak only grows through a correct quiz answer.
     if (!lastSeenDate && streak === 0) {
-      const today = todayUtc();
       streak = 1;
       longestStreak = Math.max(longestStreak, 1);
       lastSeenDate = today;
-      await supabase
-        .from("profiles")
-        .upsert(
+      await supabase.from("profiles").upsert(
+        {
+          id: userId,
+          streak_count: streak,
+          longest_streak: longestStreak,
+          last_seen_date: today,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "id" },
+      );
+    } else if (lastSeenDate && lastSeenDate < today) {
+      // Settle missed days as soon as the user shows up, instead of waiting for
+      // an answer: each missed day costs coins, otherwise the streak is gone.
+      const daysSince = Math.round(
+        (Date.parse(`${today}T00:00:00Z`) - Date.parse(`${lastSeenDate}T00:00:00Z`)) / 86400000,
+      );
+      const missedDays = daysSince - 1;
+      if (missedDays > 0) {
+        const cost = missedDays * STREAK_SAVE_COST;
+        if (streak > 0 && coins >= cost) {
+          coins = Math.max(0, coins - cost);
+          streakSaved = true;
+        } else {
+          streak = 0;
+          streakLost = true;
+        }
+        // Park the marker on yesterday so today's correct answer still extends
+        // the streak by exactly one day.
+        const yesterday = new Date(`${today}T00:00:00Z`);
+        yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+        lastSeenDate = yesterday.toISOString().slice(0, 10);
+
+        await supabase.from("profiles").upsert(
           {
             id: userId,
             streak_count: streak,
             longest_streak: longestStreak,
-            last_seen_date: today,
+            last_seen_date: lastSeenDate,
+            coins,
             updated_at: new Date().toISOString(),
           },
           { onConflict: "id" },
         );
+      }
     }
 
     return {
@@ -67,8 +103,12 @@ export const getProfile = createServerFn({ method: "GET" })
       streak,
       longestStreak,
       lastSeenDate,
+      coins,
+      streakSaved,
+      streakLost,
       savedCount: count ?? 0,
     };
+
   });
 
 

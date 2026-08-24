@@ -9,11 +9,15 @@ import { DailyQuizCard } from "@/components/DailyQuizCard";
 import { getTodayFact } from "@/lib/facts.functions";
 import { getProfile, isFactSaved } from "@/lib/user.functions";
 import { useSession } from "@/hooks/useSession";
+import { FACT_GC_TIME, msUntilUtcMidnight } from "@/lib/cache-time";
 
 const todayQuery = queryOptions({
   queryKey: ["today-fact"],
   queryFn: () => getTodayFact(),
+  staleTime: msUntilUtcMidnight(),
+  gcTime: FACT_GC_TIME,
 });
+
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureQueryData(todayQuery),

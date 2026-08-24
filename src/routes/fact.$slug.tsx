@@ -7,12 +7,17 @@ import { FactCard } from "@/components/FactCard";
 import { getFactBySlug } from "@/lib/facts.functions";
 import { isFactSaved } from "@/lib/user.functions";
 import { useSession } from "@/hooks/useSession";
+import { FACT_GC_TIME } from "@/lib/cache-time";
 
 const factQuery = (slug: string) =>
   queryOptions({
     queryKey: ["fact", slug],
     queryFn: () => getFactBySlug({ data: { slug } }),
+    // Published explainers never change — read from the device cache.
+    staleTime: Infinity,
+    gcTime: FACT_GC_TIME,
   });
+
 
 export const Route = createFileRoute("/fact/$slug")({
   loader: async ({ context, params }) => {

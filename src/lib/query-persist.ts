@@ -6,10 +6,24 @@ const MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 /** Only fact content is cached offline — never user/session-specific data. */
 function isCacheable(query: Query): boolean {
   const key = query.queryKey[0];
-  return key === "archive" || key === "fact" || key === "today-fact";
+  if (key !== "archive" && key !== "fact" && key !== "today-fact") return false;
+  // Persisting a pending query would restore an unresolvable promise and the
+  // query would hang forever on the next visit.
+  return query.state.status === "success" && query.state.data !== undefined;
 }
 
-type Stored = { timestamp: number; state: unknown };
+type DehydratedQuery = { state?: { status?: string; data?: unknown } };
+type Stored = { timestamp: number; state: { queries?: DehydratedQuery[] } };
+
+/** Drops anything that isn't settled data (legacy caches may hold pending queries). */
+function sanitize(state: Stored["state"]) {
+  return {
+    ...state,
+    queries: (state.queries ?? []).filter(
+      (q) => q.state?.status === "success" && q.state?.data !== undefined,
+    ),
+  };
+}
 
 /**
  * Restores cached fact content from localStorage synchronously (so route
@@ -17,13 +31,14 @@ type Stored = { timestamp: number; state: unknown };
  */
 export function setupFactCache(queryClient: QueryClient) {
   if (typeof window === "undefined") return;
+  (window as any).__qc = queryClient;
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Stored;
       if (Date.now() - parsed.timestamp < MAX_AGE) {
-        hydrate(queryClient, parsed.state);
+        hydrate(queryClient, sanitize(parsed.state));
       } else {
         window.localStorage.removeItem(STORAGE_KEY);
       }

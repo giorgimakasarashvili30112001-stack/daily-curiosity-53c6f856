@@ -31,6 +31,7 @@ function sanitize(state: Stored["state"]) {
  */
 export function setupFactCache(queryClient: QueryClient) {
   if (typeof window === "undefined") return;
+  (window as any).__qc = queryClient;
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);

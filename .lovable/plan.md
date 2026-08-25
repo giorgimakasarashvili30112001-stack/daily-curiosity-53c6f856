@@ -1,38 +1,20 @@
-# Retention & polish pack
+# Fix: preview in a new tab fails with "keys are missing"
 
-Since no direction was picked, this plan takes the highest-value, lowest-risk set: make the daily content always ready, explain the coin/streak system to new users, and give people a reason to come back and share.
+## What's wrong
 
-## 1. Content is always ready
+The app's Supabase URL and publishable key currently live only in the local `.env` file, and `.env` is listed in `.gitignore`. The in-editor preview works because the sandbox has that file, but the standalone preview/published build never receives it — so the browser client throws "Missing Supabase environment variable(s)" and the page fails to load.
 
-Today the daily fact and quiz questions are generated the moment someone opens the app, so the first visitor of the day can see "still being prepared".
+The service-role key is unaffected: it's stored as a project secret (`SB_SERVICE_ROLE_KEY`) and is injected server-side correctly.
 
-- Add a public endpoint at `src/routes/api/public/prewarm.ts` that tops up the fact library, picks tomorrow's fact, and pre-generates its first quiz question.
-- Protect it with a shared secret header so only a scheduler can call it.
-- The user can point any scheduler (Supabase cron or an external one) at the stable project URL once a day.
-- The on-demand path stays as a fallback, so nothing breaks if the job misses.
+## Fix
 
-## 2. Onboarding sheet
+Move the two *public* values (project URL and publishable/anon key — both safe to ship in client code, they're protected by row-level security) into a committed config file, and keep env vars as an override.
 
-First-time visitors see a one-time explainer covering: one fact a day, answer yesterday's question, 1 coin per correct answer, 30 coins repairs a missed day, streak icon levels.
+1. Add `src/integrations/supabase/config.ts` exporting `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_PROJECT_ID` with the real values as defaults.
+2. Update `src/integrations/supabase/client.ts` to fall back to these constants at the end of its existing env lookup chain, so any env var still wins if present.
+3. Update `src/integrations/supabase/client.server.ts` to use the same URL fallback (it keeps requiring the service-role key from secrets, which stays server-only).
+4. Keep `.env` as-is for local overrides; no secret is committed.
 
-- New `src/components/OnboardingSheet.tsx`, dismissed state in localStorage.
-- Rendered from `src/routes/index.tsx` only.
+## Verify
 
-## 3. Weekly recap card
-
-A "Your week" block on the profile page: facts read, questions answered, accuracy, coins earned, current streak — with a Share button reusing `ShareSheet`.
-
-- New server function `getWeeklyRecap` in `src/lib/quiz.functions.ts` aggregating the last 7 days of `quiz_attempts`.
-- Rendered in `src/routes/_authenticated/profile.tsx` above the existing stats grid.
-
-## 4. Installable app (PWA)
-
-- `public/manifest.webmanifest` plus icons, linked from `src/routes/__root.tsx`.
-- No service worker or offline caching in this pass — install prompt only, keeps it simple and avoids stale-content bugs.
-
-## Technical notes
-
-- All new backend logic uses `createServerFn` in existing `*.functions.ts` files; the prewarm route is the only raw HTTP endpoint and it verifies its secret before doing work.
-- No schema changes required — recap reads existing `quiz_attempts` and `favorites` rows.
-- One new secret for the prewarm endpoint.
-- Styling stays on existing tokens and the current card/rounded-3xl language.
+Load the preview in a standalone tab and confirm the daily fact, archive, and auth pages render without the missing-keys error.

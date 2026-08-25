@@ -6,7 +6,10 @@ const MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 /** Only fact content is cached offline — never user/session-specific data. */
 function isCacheable(query: Query): boolean {
   const key = query.queryKey[0];
-  return key === "archive" || key === "fact" || key === "today-fact";
+  if (key !== "archive" && key !== "fact" && key !== "today-fact") return false;
+  // Persisting a pending query would restore an unresolvable promise and the
+  // query would hang forever on the next visit.
+  return query.state.status === "success" && query.state.data !== undefined;
 }
 
 type Stored = { timestamp: number; state: unknown };

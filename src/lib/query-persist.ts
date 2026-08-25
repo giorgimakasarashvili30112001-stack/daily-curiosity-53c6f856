@@ -32,19 +32,30 @@ export function setupFactCache(queryClient: QueryClient) {
     // Corrupt cache: ignore and start fresh.
   }
 
+  const save = () => {
+    try {
+      const state = dehydrate(queryClient, { shouldDehydrateQuery: isCacheable });
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ timestamp: Date.now(), state } satisfies Stored),
+      );
+    } catch {
+      // Storage full or unavailable — caching is best-effort.
+    }
+  };
+
   let timer: ReturnType<typeof setTimeout> | undefined;
   queryClient.getQueryCache().subscribe(() => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => {
-      try {
-        const state = dehydrate(queryClient, { shouldDehydrateQuery: isCacheable });
-        window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ timestamp: Date.now(), state } satisfies Stored),
-        );
-      } catch {
-        // Storage full or unavailable — caching is best-effort.
-      }
-    }, 300);
+    timer = setTimeout(save, 300);
+  });
+
+  // SSR-hydrated data never triggers the cache subscription, so flush once
+  // after startup and again when the page is backgrounded or closed.
+  setTimeout(save, 1500);
+  window.addEventListener("load", () => setTimeout(save, 0));
+  window.addEventListener("pagehide", save);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") save();
   });
 }

@@ -130,6 +130,7 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       user_id: context.userId,
       quiz_date: quizDate,
       fact_id: data.factId,
+      quiz_question_id: question.id,
       question_index: data.questionIndex,
       selected_index: data.selectedIndex,
       is_correct: isCorrect,

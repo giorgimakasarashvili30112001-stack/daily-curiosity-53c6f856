@@ -1,6 +1,7 @@
 import { dbAdmin as supabaseAdmin } from "./db.server";
 
 export type QuizQuestionRow = {
+  id: string;
   fact_id: string;
   question_index: number;
   prompt: string;
@@ -27,7 +28,7 @@ export async function loadQuestion(
 ): Promise<QuizQuestionRow | null> {
   const { data } = await supabaseAdmin
     .from("quiz_questions")
-    .select("fact_id, question_index, prompt, options, correct_index, explanation")
+    .select("id, fact_id, question_index, prompt, options, correct_index, explanation")
     .eq("fact_id", factId)
     .eq("question_index", questionIndex)
     .maybeSingle();
@@ -35,6 +36,7 @@ export async function loadQuestion(
   const options = normalizeOptions(data.options);
   if (options.length !== 4) return null;
   return {
+    id: data.id,
     fact_id: data.fact_id,
     question_index: data.question_index,
     prompt: data.prompt,
@@ -159,7 +161,7 @@ export async function generateQuestion(
     return loadQuestion(fact.id, questionIndex);
   }
 
-  const row: QuizQuestionRow = {
+  const row = {
     fact_id: fact.id,
     question_index: questionIndex,
     prompt: parsed.prompt.trim(),

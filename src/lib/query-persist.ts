@@ -12,7 +12,18 @@ function isCacheable(query: Query): boolean {
   return query.state.status === "success" && query.state.data !== undefined;
 }
 
-type Stored = { timestamp: number; state: unknown };
+type DehydratedQuery = { state?: { status?: string; data?: unknown } };
+type Stored = { timestamp: number; state: { queries?: DehydratedQuery[] } };
+
+/** Drops anything that isn't settled data (legacy caches may hold pending queries). */
+function sanitize(state: Stored["state"]) {
+  return {
+    ...state,
+    queries: (state.queries ?? []).filter(
+      (q) => q.state?.status === "success" && q.state?.data !== undefined,
+    ),
+  };
+}
 
 /**
  * Restores cached fact content from localStorage synchronously (so route

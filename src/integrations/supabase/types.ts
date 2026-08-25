@@ -149,6 +149,7 @@ export type Database = {
           is_correct: boolean
           question_index: number
           quiz_date: string
+          quiz_question_id: string
           selected_index: number
           user_id: string
         }
@@ -159,6 +160,7 @@ export type Database = {
           is_correct: boolean
           question_index?: number
           quiz_date: string
+          quiz_question_id: string
           selected_index: number
           user_id: string
         }
@@ -169,6 +171,7 @@ export type Database = {
           is_correct?: boolean
           question_index?: number
           quiz_date?: string
+          quiz_question_id?: string
           selected_index?: number
           user_id?: string
         }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/")({
 });
 
 function TodayPage() {
-  const { data } = useSuspenseQuery(todayQuery);
+  const { data } = useQuery(todayQuery);
   const { user } = useSession();
   const profileFn = useServerFn(getProfile);
   const savedFn = useServerFn(isFactSaved);
@@ -52,16 +52,16 @@ function TodayPage() {
   });
 
   const saved = useQuery({
-    queryKey: ["fact-saved", data.fact?.id, user?.id],
-    queryFn: () => savedFn({ data: { factId: data.fact!.id } }),
-    enabled: !!user && !!data.fact,
+    queryKey: ["fact-saved", data?.fact?.id, user?.id],
+    queryFn: () => savedFn({ data: { factId: data!.fact!.id } }),
+    enabled: !!user && !!data?.fact,
   });
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
 
-  const dateLabel = new Date(`${data.date}T00:00:00Z`).toLocaleDateString(undefined, {
+  const dateLabel = new Date(`${data?.date ?? ""}T00:00:00Z`).toLocaleDateString(undefined, {
     weekday: "long",
     month: "short",
     day: "numeric",
@@ -72,7 +72,7 @@ function TodayPage() {
     <AppShell>
       <AppHeader eyebrow="Today's explainer" streak={streak.data?.streak ?? null} />
 
-      {data.fact ? (
+      {data?.fact ? (
         <FactCard
           key={data.fact.id}
           fact={data.fact}

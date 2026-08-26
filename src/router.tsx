@@ -5,7 +5,8 @@ import { setupFactCache } from "./lib/query-persist";
 
 export const getRouter = () => {
   const queryClient = new QueryClient();
-  setupFactCache(queryClient);
+  // setupFactCache(queryClient);
+  if (typeof window !== "undefined") (window as any).__qc = queryClient;
 
 
   const router = createRouter({

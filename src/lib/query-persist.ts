@@ -3,10 +3,12 @@ import { hydrate, dehydrate, type QueryClient, type Query } from "@tanstack/reac
 const STORAGE_KEY = "daily-curiosity-facts-cache-v1";
 const MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 
-/** Only fact content is cached offline — never user/session-specific data. */
+const CACHEABLE_KEYS = new Set(["archive", "fact", "today-fact", "saved-facts"]);
+
+/** Fact content plus the user's own saved list (keyed per user id). */
 function isCacheable(query: Query): boolean {
   const key = query.queryKey[0];
-  if (key !== "archive" && key !== "fact" && key !== "today-fact") return false;
+  if (typeof key !== "string" || !CACHEABLE_KEYS.has(key)) return false;
   // Persisting a pending query would restore an unresolvable promise and the
   // query would hang forever on the next visit.
   return query.state.status === "success" && query.state.data !== undefined;
@@ -31,7 +33,7 @@ function sanitize(state: Stored["state"]) {
  */
 export function setupFactCache(queryClient: QueryClient) {
   if (typeof window === "undefined") return;
-  (window as any).__qc = queryClient;
+
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);

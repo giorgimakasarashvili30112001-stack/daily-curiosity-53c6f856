@@ -20,7 +20,7 @@ const todayQuery = queryOptions({
 
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(todayQuery),
+  // loader disabled for test
   head: () => ({
     meta: [
       { title: "Daily Curiosity — one new explainer every day" },

@@ -34,7 +34,23 @@ export function FactCard({
     mutationFn: () => toggle({ data: { factId: fact.id } }),
     onSuccess: (result) => {
       setSaved(result.saved);
-      void queryClient.invalidateQueries({ queryKey: ["saved-facts"] });
+      // Keep the cached (and persisted) saved list in sync so the Saved tab can
+      // render straight from cache without hitting the database again.
+      queryClient.setQueriesData<SavedFact[]>({ queryKey: ["saved-facts"] }, (prev) => {
+        const list = prev ?? [];
+        if (!result.saved) return list.filter((row) => row.slug !== fact.slug);
+        if (list.some((row) => row.slug === fact.slug)) return list;
+        return [
+          {
+            slug: fact.slug,
+            title: fact.title,
+            category: fact.category,
+            hook: fact.hook,
+            savedAt: new Date().toISOString(),
+          },
+          ...list,
+        ];
+      });
       toast.success(result.saved ? "Saved to your list" : "Removed from your list");
     },
     onError: () => toast.error("Could not update your saved list"),

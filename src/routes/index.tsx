@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
@@ -20,7 +20,7 @@ const todayQuery = queryOptions({
 
 
 export const Route = createFileRoute("/")({
-  // loader disabled for test
+  loader: ({ context }) => context.queryClient.ensureQueryData(todayQuery),
   head: () => ({
     meta: [
       { title: "Daily Curiosity — one new explainer every day" },
@@ -40,7 +40,7 @@ export const Route = createFileRoute("/")({
 });
 
 function TodayPage() {
-  const { data } = useSuspenseQuery(todayQuery);
+  const { data } = useQuery(todayQuery);
   const { user } = useSession();
   const profileFn = useServerFn(getProfile);
   const savedFn = useServerFn(isFactSaved);

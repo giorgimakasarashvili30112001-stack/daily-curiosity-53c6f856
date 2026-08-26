@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { toggleFavorite } from "@/lib/user.functions";
+import { toggleFavorite, type SavedFact } from "@/lib/user.functions";
 import { ShareSheet } from "@/components/ShareSheet";
 import type { Fact } from "@/lib/facts.functions";
 

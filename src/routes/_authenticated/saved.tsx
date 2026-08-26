@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getSavedFacts } from "@/lib/user.functions";
+import { useSession } from "@/hooks/useSession";
+import { FACT_GC_TIME } from "@/lib/cache-time";
 
 export const Route = createFileRoute("/_authenticated/saved")({
   head: () => ({
@@ -19,18 +21,25 @@ export const Route = createFileRoute("/_authenticated/saved")({
 
 function SavedPage() {
   const fetchSaved = useServerFn(getSavedFacts);
+  const { user } = useSession();
+
   const { data, isLoading } = useQuery({
-    queryKey: ["saved-facts"],
+    queryKey: ["saved-facts", user?.id],
     queryFn: () => fetchSaved({}),
+    enabled: !!user,
+    // Cache-first: the list is kept up to date locally by the save/unsave
+    // mutation, so a cached list is never refetched on revisit.
+    staleTime: Infinity,
+    gcTime: FACT_GC_TIME,
   });
 
   return (
     <AppShell>
       <AppHeader eyebrow="Saved" />
 
-      {isLoading ? (
+      {isLoading || !data ? (
         <p className="text-sm text-muted-foreground">Loading your library…</p>
-      ) : !data || data.length === 0 ? (
+      ) : data.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nothing saved yet. Tap Save on an explainer to keep it here.
         </p>

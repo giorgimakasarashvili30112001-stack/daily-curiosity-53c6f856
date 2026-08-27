@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getArchive } from "@/lib/facts.functions";
@@ -46,7 +46,7 @@ function CountdownNote() {
 }
 
 function ArchivePage() {
-  const { data } = useSuspenseQuery(archiveQuery);
+  const { data = [] } = useQuery(archiveQuery);
 
   return (
     <AppShell>
@@ -67,7 +67,7 @@ function ArchivePage() {
                 <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                   <span>{entry.category}</span>
                   <time dateTime={entry.pick_date}>
-                    {new Date(`${entry.pick_date}T00:00:00Z`).toLocaleDateString(undefined, {
+                    {new Date(`${entry.pick_date}T00:00:00Z`).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                       timeZone: "UTC",

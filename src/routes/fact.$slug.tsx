@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
@@ -64,7 +64,7 @@ function FactNotFound() {
 
 function FactPage() {
   const { slug } = Route.useParams();
-  const { data } = useSuspenseQuery(factQuery(slug));
+  const { data, isPending } = useQuery(factQuery(slug));
   const { user } = useSession();
   const savedFn = useServerFn(isFactSaved);
 
@@ -74,10 +74,11 @@ function FactPage() {
     enabled: !!user && !!data,
   });
 
+  if (isPending) return null;
   if (!data) return <FactNotFound />;
 
   const dateLabel = data.pickDate
-    ? new Date(`${data.pickDate}T00:00:00Z`).toLocaleDateString(undefined, {
+    ? new Date(`${data.pickDate}T00:00:00Z`).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",

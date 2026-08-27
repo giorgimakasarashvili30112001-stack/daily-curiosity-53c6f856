@@ -15,6 +15,59 @@ function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
+interface StreakSegment {
+  startIndex: number;
+  endIndex: number;
+}
+
+function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, key: string): StreakSegment[] {
+  const segments: StreakSegment[] = [];
+  let currentStartIndex: number | null = null;
+
+  for (let i = 0; i < cells.length; i++) {
+    const day = cells[i];
+    if (day === null) {
+      if (currentStartIndex !== null) {
+        segments.push({ startIndex: currentStartIndex, endIndex: i - 1 });
+        currentStartIndex = null;
+      }
+      continue;
+    }
+
+    const dateKey = `${key}-${String(day).padStart(2, "0")}`;
+    const isMarked = marked.has(dateKey);
+    const weekIndex = Math.floor(i / 7);
+    const dayOfWeek = i % 7;
+
+    // Check if we need to end the current streak (week boundary)
+    if (currentStartIndex !== null) {
+      const currentWeekIndex = Math.floor(currentStartIndex / 7);
+      if (weekIndex !== currentWeekIndex) {
+        segments.push({ startIndex: currentStartIndex, endIndex: i - 1 });
+        currentStartIndex = null;
+      }
+    }
+
+    if (isMarked) {
+      if (currentStartIndex === null) {
+        currentStartIndex = i;
+      }
+    } else {
+      if (currentStartIndex !== null) {
+        segments.push({ startIndex: currentStartIndex, endIndex: i - 1 });
+        currentStartIndex = null;
+      }
+    }
+  }
+
+  // Handle remaining segment
+  if (currentStartIndex !== null) {
+    segments.push({ startIndex: currentStartIndex, endIndex: cells.length - 1 });
+  }
+
+  return segments;
+}
+
 export function StreakCalendar() {
   const fetchCalendar = useServerFn(getStreakCalendar);
   const now = new Date();
@@ -42,6 +95,16 @@ export function StreakCalendar() {
     ...Array<null>(firstOffset).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
+
+  const streakSegments = calculateStreakSegments(cells, marked, key);
+
+  // Create a set of indices that are part of streak segments for quick lookup
+  const streakIndices = new Set<number>();
+  streakSegments.forEach((segment) => {
+    for (let i = segment.startIndex; i <= segment.endIndex; i++) {
+      streakIndices.add(i);
+    }
+  });
 
   return (
     <div className="mt-5 rounded-3xl border border-border bg-card p-6">
@@ -77,14 +140,60 @@ export function StreakCalendar() {
           const dateKey = `${key}-${String(day).padStart(2, "0")}`;
           const isMarked = marked.has(dateKey);
           const isToday = dateKey === today;
+          const isInStreak = streakIndices.has(i);
+
+          if (!isInStreak) {
+            return (
+              <span
+                key={dateKey}
+                className={[
+                  "flex aspect-square items-center justify-center rounded-full text-xs",
+                  "text-muted-foreground",
+                  isToday ? "border border-primary text-foreground" : "",
+                ].join(" ")}
+              >
+                {day}
+              </span>
+            );
+          }
+
+          // Find the segment this index belongs to
+          const segment = streakSegments.find(
+            (seg) => seg.startIndex <= i && i <= seg.endIndex
+          );
+
+          if (!segment) {
+            return (
+              <span key={dateKey} className="flex aspect-square items-center justify-center text-xs text-muted-foreground">
+                {day}
+              </span>
+            );
+          }
+
+          const isStart = i === segment.startIndex;
+          const isEnd = i === segment.endIndex;
+          const isSingle = isStart && isEnd;
+
+          // Determine rounded corners based on position in segment
+          let roundedClasses = "";
+          if (isSingle) {
+            roundedClasses = "rounded-full";
+          } else if (isStart) {
+            roundedClasses = "rounded-l-full";
+          } else if (isEnd) {
+            roundedClasses = "rounded-r-full";
+          } else {
+            roundedClasses = "rounded-none";
+          }
+
           return (
             <span
               key={dateKey}
               className={[
-                "flex aspect-square items-center justify-center rounded-full text-xs",
-                isMarked ? "bg-primary/15 font-semibold text-primary" : "text-muted-foreground",
-                isToday && !isMarked ? "border border-primary text-foreground" : "",
-                isToday && isMarked ? "ring-1 ring-primary" : "",
+                "flex aspect-square items-center justify-center text-xs",
+                "bg-primary/15 font-semibold text-primary",
+                roundedClasses,
+                isToday ? "ring-1 ring-primary" : "",
               ].join(" ")}
             >
               {day}

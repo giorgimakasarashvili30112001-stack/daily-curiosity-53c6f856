@@ -18,6 +18,7 @@ function todayKey() {
 interface StreakSegment {
   startIndex: number;
   endIndex: number;
+  isFullWeek?: boolean;
 }
 
 function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, key: string): StreakSegment[] {
@@ -65,7 +66,13 @@ function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, 
     segments.push({ startIndex: currentStartIndex, endIndex: cells.length - 1 });
   }
 
-  return segments;
+  // Check which segments are full weeks and mark them
+  return segments.map((segment) => {
+    const weekStartIndex = (Math.floor(segment.startIndex / 7)) * 7;
+    const weekEndIndex = weekStartIndex + 6;
+    const isFullWeek = segment.startIndex === weekStartIndex && segment.endIndex === weekEndIndex;
+    return { ...segment, isFullWeek };
+  });
 }
 
 export function StreakCalendar() {
@@ -100,9 +107,13 @@ export function StreakCalendar() {
 
   // Create a set of indices that are part of streak segments for quick lookup
   const streakIndices = new Set<number>();
+  const fullWeekIndices = new Set<number>();
   streakSegments.forEach((segment) => {
     for (let i = segment.startIndex; i <= segment.endIndex; i++) {
       streakIndices.add(i);
+      if (segment.isFullWeek) {
+        fullWeekIndices.add(i);
+      }
     }
   });
 
@@ -141,6 +152,7 @@ export function StreakCalendar() {
           const isMarked = marked.has(dateKey);
           const isToday = dateKey === today;
           const isInStreak = streakIndices.has(i);
+          const isFullWeek = fullWeekIndices.has(i);
 
           if (!isInStreak) {
             return (
@@ -186,14 +198,19 @@ export function StreakCalendar() {
             roundedClasses = "rounded-none";
           }
 
+          // Use vivid colors for full weeks, muted for partial streaks
+          const bgColor = isFullWeek ? "bg-primary" : "bg-primary/15";
+          const textColor = isFullWeek ? "text-primary-foreground font-bold" : "text-primary font-semibold";
+
           return (
             <span
               key={dateKey}
               className={[
                 "flex aspect-square items-center justify-center text-xs",
-                "bg-primary/15 font-semibold text-primary",
+                bgColor,
+                textColor,
                 roundedClasses,
-                isToday ? "ring-1 ring-primary" : "",
+                isToday ? "ring-2 ring-primary" : "",
               ].join(" ")}
             >
               {day}

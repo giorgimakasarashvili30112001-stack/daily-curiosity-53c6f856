@@ -185,6 +185,12 @@ export function StreakCalendar() {
           const isStart = i === segment.startIndex;
           const isEnd = i === segment.endIndex;
           const isSingle = isStart && isEnd;
+          const weekIndex = Math.floor(i / 7);
+          const dayOfWeek = i % 7;
+          const startWeekIndex = Math.floor(segment.startIndex / 7);
+          const endWeekIndex = Math.floor(segment.endIndex / 7);
+          const isFirstInWeek = dayOfWeek === 0; // Monday
+          const isLastInWeek = dayOfWeek === 6;   // Sunday
 
           // Determine rounded corners based on position in segment
           let roundedClasses = "";
@@ -198,11 +204,36 @@ export function StreakCalendar() {
             roundedClasses = "rounded-none";
           }
 
+          // Determine border placement
+          let borderClasses = "";
+          if (isFullWeek) {
+            if (isSingle) {
+              // Single day full week - all borders
+              borderClasses = "border-2 border-red-500";
+            } else if (isStart && isFirstInWeek) {
+              // First day of week and start of streak - left, top, bottom
+              borderClasses = "border-2 border-red-500 border-r-0";
+            } else if (isEnd && isLastInWeek) {
+              // Last day of week and end of streak - right, top, bottom
+              borderClasses = "border-2 border-red-500 border-l-0";
+            } else if (isFirstInWeek) {
+              // First day of week, middle of streak - left, top, bottom
+              borderClasses = "border-2 border-red-500 border-r-0";
+            } else if (isLastInWeek) {
+              // Last day of week, middle of streak - right, top, bottom
+              borderClasses = "border-2 border-red-500 border-l-0";
+            } else {
+              // Middle days - only top and bottom
+              borderClasses = "border-t-2 border-b-2 border-red-500";
+            }
+          }
+
+          // Shadow: deep red, only horizontal glow (no Y offset)
+          const shadowClasses = isFullWeek ? "shadow-[0_0_12px_rgba(239,68,68,0.6)]" : "";
+
           // Use vivid colors for full weeks, muted for partial streaks
-          // Full weeks use primary color with red border and shadow for emphasis
           const bgColor = isFullWeek ? "bg-primary" : "bg-primary/15";
           const textColor = isFullWeek ? "text-primary-foreground font-bold" : "text-primary font-semibold";
-          const borderShadow = isFullWeek ? "border-2 border-red-500 shadow-lg shadow-red-200" : "";
 
           return (
             <span
@@ -212,7 +243,8 @@ export function StreakCalendar() {
                 bgColor,
                 textColor,
                 roundedClasses,
-                borderShadow,
+                borderClasses,
+                shadowClasses,
                 isToday && isFullWeek ? "ring-2 ring-red-500" : isToday ? "ring-2 ring-primary" : "",
               ].join(" ")}
             >

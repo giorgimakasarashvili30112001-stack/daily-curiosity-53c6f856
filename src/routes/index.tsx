@@ -58,6 +58,11 @@ function TodayPage() {
   });
 
   useEffect(() => {
+    console.log("TODAY_MOUNT");
+    return () => console.log("TODAY_UNMOUNT");
+  }, []);
+
+  useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
 

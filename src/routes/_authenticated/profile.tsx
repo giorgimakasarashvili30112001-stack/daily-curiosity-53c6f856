@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Coins } from "lucide-react";
 import { StreakIcon } from "@/components/StreakIcon";
+import { StreakCalendar } from "@/components/StreakCalendar";
 import { useServerFn } from "@tanstack/react-start";
 import { ShareSheet } from "@/components/ShareSheet";
 import { AppShell } from "@/components/AppShell";
@@ -119,6 +120,7 @@ function ProfilePage() {
         </div>
       </div>
 
+      <StreakCalendar />
 
       <div className="mt-5 rounded-3xl border border-border bg-card p-6">
         <label htmlFor="displayName" className="text-xs text-muted-foreground">

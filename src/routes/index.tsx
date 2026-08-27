@@ -61,7 +61,7 @@ function TodayPage() {
     document.documentElement.classList.add("dark");
   }, []);
 
-  const dateLabel = new Date(`${data?.date ?? ""}T00:00:00Z`).toLocaleDateString(undefined, {
+  const dateLabel = new Date(`${data?.date ?? ""}T00:00:00Z`).toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
     day: "numeric",

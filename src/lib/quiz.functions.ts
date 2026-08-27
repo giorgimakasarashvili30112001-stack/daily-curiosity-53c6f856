@@ -278,6 +278,30 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
     };
   });
 
+/** Dates (YYYY-MM-DD) in the given month where the user had a correct answer. */
+export const getStreakCalendar = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({ month: z.string().regex(/^\d{4}-\d{2}$/) })
+      .parse(input),
+  )
+  .handler(async ({ data, context }): Promise<string[]> => {
+    const [year, month] = data.month.split("-").map(Number);
+    const start = `${data.month}-01`;
+    const endDate = new Date(Date.UTC(year!, month!, 1));
+    const end = endDate.toISOString().slice(0, 10);
+
+    const { data: rows } = await context.supabase
+      .from("quiz_attempts")
+      .select("quiz_date")
+      .eq("is_correct", true)
+      .gte("quiz_date", start)
+      .lt("quiz_date", end);
+
+    return [...new Set((rows ?? []).map((r) => r.quiz_date))];
+  });
+
 /** Lifetime quiz stats for the signed-in user. */
 export const getQuizStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

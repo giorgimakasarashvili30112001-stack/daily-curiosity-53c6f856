@@ -199,18 +199,20 @@ export function StreakCalendar() {
           }
 
           // Use vivid colors for full weeks, muted for partial streaks
-          // Full weeks use a red-tinted color (rose/red) for higher visibility
-          const bgColor = isFullWeek ? "bg-red-500" : "bg-primary/15";
-          const textColor = isFullWeek ? "text-white font-bold" : "text-primary font-semibold";
+          // Full weeks use primary color with red border and shadow for emphasis
+          const bgColor = isFullWeek ? "bg-primary" : "bg-primary/15";
+          const textColor = isFullWeek ? "text-primary-foreground font-bold" : "text-primary font-semibold";
+          const borderShadow = isFullWeek ? "border-2 border-red-500 shadow-lg shadow-red-200" : "";
 
           return (
             <span
               key={dateKey}
               className={[
-                "flex aspect-square items-center justify-center text-xs",
+                "flex aspect-square items-center justify-center text-xs transition-all",
                 bgColor,
                 textColor,
                 roundedClasses,
+                borderShadow,
                 isToday && isFullWeek ? "ring-2 ring-red-500" : isToday ? "ring-2 ring-primary" : "",
               ].join(" ")}
             >

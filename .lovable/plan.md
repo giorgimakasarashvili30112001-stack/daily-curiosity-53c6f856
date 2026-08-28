@@ -11,21 +11,25 @@ The streak logic decides "did you miss a day?" from `last_seen_date`, but that f
 
 ## The fix
 
-Track streak continuity from the last **correct answer**, not from the last visit.
+Track streak continuity from the last **correct answer**, read straight from `quiz_attempts`, and remember which missed days were bought back.
 
-1. Add two fields to the profile: the date of the last correct answer, and a "settled through" date that records which missed days have already been paid for (so coins are never charged twice for the same day). Backfill both from existing quiz history.
-2. On login/profile load, settle every day between the last correct answer (or last settled day) and today:
-   - each missed day costs 30 coins;
-   - if the balance covers all of them, coins are deducted and the streak stays;
+1. No "last correct date" column: derive it as `max(quiz_date) where is_correct = true` for the user.
+2. Add one column to the profile: `saved_days` — the list of dates that were paid for with coins (30 each). Together with the correct-answer dates this fully describes the streak chain.
+3. On login/profile load, settle every day between the last correct answer (or last saved day) and today:
+   - each unsettled missed day costs 30 coins;
+   - if the balance covers all of them, coins are deducted and each day is appended to `saved_days`, streak stays;
    - if it doesn't, the streak resets to 0 and no coins are taken;
-   - mark those days settled so revisiting the same day doesn't charge again.
-3. On a correct answer: streak +1 if the previous day was answered correctly or was paid for, otherwise the streak starts at 1. Record the date as the last correct answer. `last_seen_date` becomes purely informational.
-4. Repair your current row as part of the change: Aug 27 is one missed day → 34 − 30 = **4 coins**, streak stays **2**.
+   - days already in `saved_days` are never charged twice, so revisiting the same day is free.
+4. On a correct answer: streak +1 if yesterday was a correct-answer day or is in `saved_days`, otherwise the streak starts at 1. `last_seen_date` becomes purely informational.
+5. Repair your current row as part of the change: Aug 27 is one missed day → 34 − 30 = **4 coins**, streak stays **2**, and `2026-08-27` goes into `saved_days`.
+
+The calendar on the profile can then also mark bought-back days differently from earned days (small follow-up, easy once `saved_days` exists).
 
 ## Technical notes
 
-- Migration: `alter table profiles add column last_correct_date date, add column settled_through_date date;` plus a backfill from `max(quiz_date) where is_correct` per user, and the one-off correction for the affected profile.
-- `src/lib/user.functions.ts` — `getProfile` settlement rewritten against `last_correct_date`/`settled_through_date`; drops the "park last_seen on yesterday" hack.
-- `src/lib/quiz.functions.ts` — `submitQuizAnswer` streak branch uses the same two fields; missed-day charging stays only as a fallback for users who answer before the profile loads.
+- Migration: `alter table profiles add column saved_days date[] not null default '{}';` plus the one-off correction for the affected profile.
+- `src/lib/user.functions.ts` — `getProfile` settlement rewritten: query `quiz_attempts` for the latest correct `quiz_date`, combine with `saved_days`, charge unsettled gap days; drops the "park last_seen on yesterday" hack.
+- `src/lib/quiz.functions.ts` — `submitQuizAnswer` streak branch uses the same derivation instead of `last_seen_date`.
 - `STREAK_SAVE_COST` (30) unchanged; coins still clamped at ≥ 0.
-- `src/integrations/supabase/types.ts` updated for the new columns.
+- `src/integrations/supabase/types.ts` updated for the new column.
+

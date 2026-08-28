@@ -138,15 +138,17 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     // A duplicate means they already answered this question today; keep the stored attempt.
     if (error && error.code !== "23505") throw error;
 
-    const { data: profile } = await context.supabase
-      .from("profiles")
-      .select("streak_count, longest_streak, last_seen_date, coins")
-      .eq("id", context.userId)
-      .maybeSingle();
+    const { settleStreak, saveProfileRow, shiftDay } = await import("./streak.server");
 
-    let streak = profile?.streak_count ?? 0;
-    let longestStreak = profile?.longest_streak ?? 0;
-    let coins = profile?.coins ?? 0;
+    // Settle any missed days first so the chain is up to date before extending it.
+    const settlement = await settleStreak(context.supabase, context.userId, quizDate);
+
+    let streak = settlement.streak;
+    let longestStreak = settlement.longestStreak;
+    let coins = settlement.coins;
+    let streakExtended = false;
+    const streakSaved = settlement.streakSaved;
+    let coinsEarned = 0;
 
     if (error) {
       const { data: existing } = await context.supabase
@@ -169,60 +171,28 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       }
     }
 
-    let streakExtended = false;
-    let streakSaved = false;
-    let coinsEarned = 0;
-
     if (isCorrect) {
+      // One coin for every newly recorded correct answer.
       coinsEarned = 1;
+      coins = Math.max(0, coins + 1);
 
-      if (profile?.last_seen_date !== quizDate) {
-        const last = profile?.last_seen_date ?? null;
-        const daysSince = last
-          ? Math.round(
-              (Date.parse(`${quizDate}T00:00:00Z`) - Date.parse(`${last}T00:00:00Z`)) / 86400000,
-            )
-          : null;
-
-        if (daysSince === 1) {
-          streak = streak + 1;
-        } else if (daysSince !== null && daysSince > 1 && streak > 0) {
-          // Each missed day can be repaired with coins; all of them must be covered.
-          const missedDays = daysSince - 1;
-          const cost = missedDays * STREAK_SAVE_COST;
-          // Affordability is checked against the balance before today's reward.
-          if (coins >= cost) {
-            coins -= cost;
-            streak = streak + 1;
-            streakSaved = true;
-          } else {
-            streak = 1;
-          }
-        } else {
-          streak = 1;
-        }
-
-        // Award today's coin after save logic so it cannot be consumed by missed-day charges,
-        // then clamp the balance so it never drops below zero.
-        coins += 1;
-        coins = Math.max(0, coins);
-
+      // The streak grows once per day, on the first correct answer of the day.
+      const alreadyCountedToday = settlement.lastCorrect === quizDate;
+      if (!alreadyCountedToday) {
+        streak = settlement.anchor === shiftDay(quizDate, -1) ? streak + 1 : 1;
         longestStreak = Math.max(longestStreak, streak);
         streakExtended = true;
-
-        await context.supabase.from("profiles").upsert(
-          {
-            id: context.userId,
-            streak_count: streak,
-            longest_streak: longestStreak,
-            last_seen_date: quizDate,
-            coins,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "id" },
-        );
       }
+
+      await saveProfileRow(context.supabase, context.userId, {
+        streak_count: streak,
+        longest_streak: longestStreak,
+        last_seen_date: quizDate,
+        coins,
+        saved_days: settlement.savedDays,
+      });
     }
+
 
     return {
       questionIndex: data.questionIndex,

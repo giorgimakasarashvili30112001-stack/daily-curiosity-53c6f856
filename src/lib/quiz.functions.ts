@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { STREAK_SAVE_COST } from "./quiz.constants";
+
 
 /** Hard cap on follow-up questions generated per explainer. */
 export const MAX_QUESTION_INDEX = 9;
@@ -126,6 +126,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     const isCorrect = data.selectedIndex === question.correct_index;
     const quizDate = todayUtc();
 
+    const { settleStreak, saveProfileRow, shiftDay } = await import("./streak.server");
+
+    // Settle missed days from the pre-answer state, before today's attempt is stored.
+    const settlement = await settleStreak(context.supabase, context.userId, quizDate);
+
     const { error } = await context.supabase.from("quiz_attempts").insert({
       user_id: context.userId,
       quiz_date: quizDate,
@@ -138,17 +143,13 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
     // A duplicate means they already answered this question today; keep the stored attempt.
     if (error && error.code !== "23505") throw error;
 
-    const { settleStreak, saveProfileRow, shiftDay } = await import("./streak.server");
-
-    // Settle any missed days first so the chain is up to date before extending it.
-    const settlement = await settleStreak(context.supabase, context.userId, quizDate);
-
     let streak = settlement.streak;
     let longestStreak = settlement.longestStreak;
     let coins = settlement.coins;
     let streakExtended = false;
     const streakSaved = settlement.streakSaved;
     let coinsEarned = 0;
+
 
     if (error) {
       const { data: existing } = await context.supabase

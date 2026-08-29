@@ -82,12 +82,13 @@ export function StreakCalendar() {
   const key = monthKey(view);
   const isCurrentMonth = key === monthKey(now);
 
-  const { data: markedDays } = useQuery({
+  const { data: calendar } = useQuery({
     queryKey: ["streak-calendar", key],
     queryFn: () => fetchCalendar({ data: { month: key } }),
     staleTime: 1000 * 60 * 60,
   });
-  const marked = new Set(markedDays ?? []);
+  const marked = new Set(calendar?.correct ?? []);
+  const savedDays = new Set(calendar?.saved ?? []);
 
   const year = view.getUTCFullYear();
   const month = view.getUTCMonth();
@@ -154,13 +155,15 @@ export function StreakCalendar() {
           const isInStreak = streakIndices.has(i);
           const isFullWeek = fullWeekIndices.has(i);
 
+          const isSaved = savedDays.has(dateKey);
+
           if (!isInStreak) {
             return (
               <span
                 key={dateKey}
                 className={[
                   "flex aspect-square items-center justify-center rounded-full text-xs",
-                  "text-muted-foreground",
+                  isSaved ? "bg-sky-200 text-sky-900 dark:bg-sky-400/30 dark:text-sky-100" : "text-muted-foreground",
                   isToday ? "border border-primary text-foreground" : "",
                 ].join(" ")}
               >

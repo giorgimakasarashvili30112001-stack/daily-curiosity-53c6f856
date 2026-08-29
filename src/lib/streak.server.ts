@@ -67,7 +67,11 @@ export async function saveProfileRow(
   userId: string,
   patch: Record<string, unknown>,
 ) {
-  const payload = { id: userId, updated_at: new Date().toISOString(), ...patch };
+  const payload: Record<string, unknown> = {
+    id: userId,
+    updated_at: new Date().toISOString(),
+    ...patch,
+  };
   const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
   if (!error) return;
 
@@ -77,6 +81,7 @@ export async function saveProfileRow(
     .from("profiles")
     .upsert(rest, { onConflict: "id" });
   if (retryError) throw retryError;
+
 }
 
 /** Latest day the user answered a question correctly, straight from quiz_attempts. */

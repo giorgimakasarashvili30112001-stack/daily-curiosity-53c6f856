@@ -21,7 +21,7 @@ interface StreakSegment {
   isFullWeek?: boolean;
 }
 
-function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, key: string): StreakSegment[] {
+function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, saved: Set<string>, key: string): StreakSegment[] {
   const segments: StreakSegment[] = [];
   let currentStartIndex: number | null = null;
 
@@ -37,6 +37,10 @@ function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, 
 
     const dateKey = `${key}-${String(day).padStart(2, "0")}`;
     const isMarked = marked.has(dateKey);
+    const isSaved = saved.has(dateKey);
+    // For streak calculation: only marked counts
+    // But visually: we include saved to fill gaps (so bar doesn't break)
+    const isVisualPart = isMarked || isSaved;
     const weekIndex = Math.floor(i / 7);
     const dayOfWeek = i % 7;
 
@@ -49,7 +53,7 @@ function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, 
       }
     }
 
-    if (isMarked) {
+    if (isVisualPart) {
       if (currentStartIndex === null) {
         currentStartIndex = i;
       }
@@ -67,10 +71,24 @@ function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, 
   }
 
   // Check which segments are full weeks and mark them
+  // A full week counts ONLY marked days (not saved), but visually includes saved days
   return segments.map((segment) => {
     const weekStartIndex = (Math.floor(segment.startIndex / 7)) * 7;
     const weekEndIndex = weekStartIndex + 6;
-    const isFullWeek = segment.startIndex === weekStartIndex && segment.endIndex === weekEndIndex;
+    
+    // Count only marked days in this week to determine if it's a "full week"
+    let markedCount = 0;
+    for (let i = weekStartIndex; i <= weekEndIndex; i++) {
+      if (i < cells.length && cells[i] !== null) {
+        const dateKey = `${key}-${String(cells[i]).padStart(2, "0")}`;
+        if (marked.has(dateKey)) {
+          markedCount++;
+        }
+      }
+    }
+    
+    // Full week means all 7 correct days (not counting saved as full)
+    const isFullWeek = markedCount === 7;
     return { ...segment, isFullWeek };
   });
 }
@@ -104,7 +122,7 @@ export function StreakCalendar() {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  const streakSegments = calculateStreakSegments(cells, marked, key);
+  const streakSegments = calculateStreakSegments(cells, marked, savedDays, key);
 
   // Create a set of indices that are part of streak segments for quick lookup
   const streakIndices = new Set<number>();
@@ -155,15 +173,13 @@ export function StreakCalendar() {
           const isInStreak = streakIndices.has(i);
           const isFullWeek = fullWeekIndices.has(i);
 
-          const isSaved = savedDays.has(dateKey);
-
           if (!isInStreak) {
             return (
               <span
                 key={dateKey}
                 className={[
                   "flex aspect-square items-center justify-center rounded-full text-xs",
-                  isSaved ? "bg-sky-200 text-sky-900 dark:bg-sky-400/30 dark:text-sky-100" : "text-muted-foreground",
+                  "text-muted-foreground",
                   isToday ? "border border-primary text-foreground" : "",
                 ].join(" ")}
               >
@@ -234,9 +250,23 @@ export function StreakCalendar() {
           // Shadow: deep red, only horizontal glow (no Y offset)
           const shadowClasses = isFullWeek ? "shadow-[0_0_12px_rgba(239,68,68,0.6)]" : "";
 
+          // Check if this day is saved
+          const isSaved = savedDays.has(dateKey);
+
           // Use vivid colors for full weeks, muted for partial streaks
-          const bgColor = isFullWeek ? "bg-primary" : "bg-primary/15";
-          const textColor = isFullWeek ? "text-primary-foreground font-bold" : "text-primary font-semibold";
+          // Saved days get light blue background but keep red border if full week
+          let bgColor = "";
+          let textColor = "";
+          
+          if (isSaved) {
+            // Saved days: light blue background
+            bgColor = "bg-sky-200 dark:bg-sky-400/30";
+            textColor = "text-sky-900 dark:text-sky-100 font-semibold";
+          } else {
+            // Regular streak days
+            bgColor = isFullWeek ? "bg-primary" : "bg-primary/15";
+            textColor = isFullWeek ? "text-primary-foreground font-bold" : "text-primary font-semibold";
+          }
 
           return (
             <span

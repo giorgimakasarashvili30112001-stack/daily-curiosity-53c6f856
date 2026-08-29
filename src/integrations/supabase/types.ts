@@ -116,6 +116,7 @@ export type Database = {
           id: string
           last_seen_date: string | null
           longest_streak: number
+          saved_days: string[]
           streak_count: number
           updated_at: string
         }
@@ -126,6 +127,7 @@ export type Database = {
           id: string
           last_seen_date?: string | null
           longest_streak?: number
+          saved_days?: string[]
           streak_count?: number
           updated_at?: string
         }
@@ -136,6 +138,7 @@ export type Database = {
           id?: string
           last_seen_date?: string | null
           longest_streak?: number
+          saved_days?: string[]
           streak_count?: number
           updated_at?: string
         }

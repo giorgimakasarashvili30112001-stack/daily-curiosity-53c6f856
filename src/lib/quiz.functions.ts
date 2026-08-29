@@ -178,7 +178,8 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
       coins = Math.max(0, coins + 1);
 
       // The streak grows once per day, on the first correct answer of the day.
-      const alreadyCountedToday = settlement.lastCorrect === quizDate;
+      const alreadyCountedToday =
+        settlement.lastCorrect === quizDate || settlement.anchor === quizDate;
       if (!alreadyCountedToday) {
         streak = settlement.anchor === shiftDay(quizDate, -1) ? streak + 1 : 1;
         longestStreak = Math.max(longestStreak, streak);
@@ -189,9 +190,11 @@ export const submitQuizAnswer = createServerFn({ method: "POST" })
         streak_count: streak,
         longest_streak: longestStreak,
         last_seen_date: quizDate,
+        streak_anchor: quizDate,
         coins,
         saved_days: settlement.savedDays,
       });
+
     }
 
 
@@ -249,7 +252,7 @@ export const getQuizAttempt = createServerFn({ method: "GET" })
     };
   });
 
-/** Dates (YYYY-MM-DD) in the given month where the user had a correct answer. */
+/** Correct-answer days and coin-saved days in the given month. */
 export const getStreakCalendar = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -257,21 +260,36 @@ export const getStreakCalendar = createServerFn({ method: "GET" })
       .object({ month: z.string().regex(/^\d{4}-\d{2}$/) })
       .parse(input),
   )
-  .handler(async ({ data, context }): Promise<string[]> => {
+  .handler(async ({ data, context }): Promise<{ correct: string[]; saved: string[] }> => {
     const [year, month] = data.month.split("-").map(Number);
     const start = `${data.month}-01`;
     const endDate = new Date(Date.UTC(year!, month!, 1));
     const end = endDate.toISOString().slice(0, 10);
 
-    const { data: rows } = await context.supabase
-      .from("quiz_attempts")
-      .select("quiz_date")
-      .eq("is_correct", true)
-      .gte("quiz_date", start)
-      .lt("quiz_date", end);
+    const [{ data: rows }, { data: profile }] = await Promise.all([
+      context.supabase
+        .from("quiz_attempts")
+        .select("quiz_date")
+        .eq("is_correct", true)
+        .gte("quiz_date", start)
+        .lt("quiz_date", end),
+      context.supabase
+        .from("profiles")
+        .select("saved_days")
+        .eq("id", context.userId)
+        .maybeSingle(),
+    ]);
 
-    return [...new Set((rows ?? []).map((r) => r.quiz_date))];
+    const saved = ((profile?.saved_days ?? []) as string[])
+      .map((d) => String(d).slice(0, 10))
+      .filter((d) => d >= start && d < end);
+
+    return {
+      correct: [...new Set((rows ?? []).map((r) => r.quiz_date))],
+      saved: [...new Set(saved)],
+    };
   });
+
 
 /** Lifetime quiz stats for the signed-in user. */
 export const getQuizStats = createServerFn({ method: "GET" })

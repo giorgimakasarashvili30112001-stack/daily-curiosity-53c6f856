@@ -29,10 +29,31 @@ struct FactProvider: TimelineProvider {
         Task {
             let title = await fetchTitle() ?? "Today's fact is on its way…"
             let entry = FactEntry(date: Date(), title: title)
-            let next = Date().addingTimeInterval(30 * 60)
+            // Schedule next update for tomorrow at 00:01 UTC
+            let next = nextUtcMidnightPlusMins()
             completion(Timeline(entries: [entry], policy: .after(next)))
         }
     }
+
+    private func nextUtcMidnightPlusMins() -> Date {
+        let calendar = Calendar(identifier: .gregorian)
+        var components = DateComponents()
+        components.timeZone = TimeZone(abbreviation: "UTC")
+        
+        let now = Date()
+        let utcNow = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: now)
+        
+        // Calculate tomorrow at 00:01 UTC
+        var nextComponents = DateComponents()
+        nextComponents.timeZone = TimeZone(abbreviation: "UTC")
+        nextComponents.year = utcNow.year
+        nextComponents.month = utcNow.month
+        nextComponents.day = (utcNow.day ?? 0) + 1
+        nextComponents.hour = 0
+        nextComponents.minute = 1
+        nextComponents.second = 0
+        
+        return calendar.date(from: nextComponents) ?? Date().addingTimeInterval(86400)
 
     private func fetchTitle() async -> String? {
         do {

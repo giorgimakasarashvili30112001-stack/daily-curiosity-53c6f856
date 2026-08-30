@@ -149,11 +149,18 @@ export async function settleStreak(
     });
   };
 
-  // No history: today is the first streak day.
+  // No history: streak only starts when user answers correctly (has lastCorrect)
   if (!anchor || streak <= 0) {
-    streak = 1;
-    longestStreak = Math.max(longestStreak, 1);
-    anchor = today;
+    // Only count as streak if there's a correct answer from quiz_attempts
+    if (lastCorrect) {
+      streak = 1;
+      longestStreak = Math.max(longestStreak, 1);
+      anchor = lastCorrect;
+    } else {
+      // No correct answers yet, streak is 0
+      streak = 0;
+      anchor = null;
+    }
     await persist();
     return {
       profile: row,

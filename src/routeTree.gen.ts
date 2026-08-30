@@ -17,6 +17,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSavedRouteImport } from './routes/_authenticated/saved'
 import { Route as FactSlugRouteImport } from './routes/fact.$slug'
 import { Route as ApiPublicPrewarmRouteImport } from './routes/api/public/prewarm'
+import { Route as ApiPublicTodayTitleRouteImport } from './routes/api/public/today-title'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +58,11 @@ const ApiPublicPrewarmRoute = ApiPublicPrewarmRouteImport.update({
   path: '/api/public/prewarm',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicTodayTitleRoute = ApiPublicTodayTitleRouteImport.update({
+  id: '/api/public/today-title',
+  path: '/api/public/today-title',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/saved': typeof AuthenticatedSavedRoute
   '/fact/$slug': typeof FactSlugRoute
   '/api/public/prewarm': typeof ApiPublicPrewarmRoute
+  '/api/public/today-title': typeof ApiPublicTodayTitleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/saved': typeof AuthenticatedSavedRoute
   '/fact/$slug': typeof FactSlugRoute
   '/api/public/prewarm': typeof ApiPublicPrewarmRoute
+  '/api/public/today-title': typeof ApiPublicTodayTitleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/_authenticated/saved': typeof AuthenticatedSavedRoute
   '/fact/$slug': typeof FactSlugRoute
   '/api/public/prewarm': typeof ApiPublicPrewarmRoute
+  '/api/public/today-title': typeof ApiPublicTodayTitleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/saved'
     | '/fact/$slug'
     | '/api/public/prewarm'
+    | '/api/public/today-title'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/saved'
     | '/fact/$slug'
     | '/api/public/prewarm'
+    | '/api/public/today-title'
   id:
     | '__root__'
     | '/'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/_authenticated/saved'
     | '/fact/$slug'
     | '/api/public/prewarm'
+    | '/api/public/today-title'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -125,6 +137,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   FactSlugRoute: typeof FactSlugRoute
   ApiPublicPrewarmRoute: typeof ApiPublicPrewarmRoute
+  ApiPublicTodayTitleRoute: typeof ApiPublicTodayTitleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPrewarmRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/today-title': {
+      id: '/api/public/today-title'
+      path: '/api/public/today-title'
+      fullPath: '/api/public/today-title'
+      preLoaderRoute: typeof ApiPublicTodayTitleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -208,6 +228,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   FactSlugRoute: FactSlugRoute,
   ApiPublicPrewarmRoute: ApiPublicPrewarmRoute,
+  ApiPublicTodayTitleRoute: ApiPublicTodayTitleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getArchive } from "@/lib/facts.functions";
@@ -35,12 +36,48 @@ export const Route = createFileRoute("/archive")({
 });
 
 function CountdownNote() {
+  const [timeLeft, setTimeLeft] = useState<string>("");
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date();
+      const next = Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1,
+        0,
+        0,
+        0,
+        0,
+      );
+      const msLeft = Math.max(0, next - now.getTime());
+
+      // Convert milliseconds to hours, minutes, seconds
+      const totalSeconds = Math.floor(msLeft / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      // Format as "12h 34m 56s"
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="mb-5 rounded-2xl border border-dashed border-border p-5 text-center">
       <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Tomorrow</p>
       <p className="mt-2 text-sm text-muted-foreground">
         Sealed until midnight UTC. A new topic, a different category.
       </p>
+      {timeLeft && (
+        <p className="mt-3 text-xs font-semibold text-primary">
+          Time left: {timeLeft}
+        </p>
+      )}
     </div>
   );
 }

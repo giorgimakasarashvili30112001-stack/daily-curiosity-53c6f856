@@ -80,12 +80,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#12100e" },
-      { title: "Daily Curiosity" },
+      { title: "The Daily How" },
       {
         name: "description",
         content: "One short explainer every day: how things work and what things mean.",
       },
-      { property: "og:title", content: "Daily Curiosity" },
+      { property: "og:title", content: "The Daily How" },
       {
         property: "og:description",
         content: "One short explainer every day: how things work and what things mean.",
@@ -95,8 +95,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "Curiosity" },
-      { name: "application-name", content: "Daily Curiosity" },
+      { name: "apple-mobile-web-app-title", content: "Daily How" },
+      { name: "application-name", content: "The Daily How" },
     ],
     links: [
       {

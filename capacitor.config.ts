@@ -7,7 +7,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "app.lovable.dailycuriosity",
-  appName: "Daily Curiosity",
+  appName: "The Daily How",
   webDir: "dist/client",
   server: {
     url: "https://project--4537fc7c-9d89-4404-be9b-4ff997c88324.lovable.app",

@@ -152,7 +152,7 @@ export async function topUpFacts(minUnused = 15, batchSize = 8): Promise<number>
         {
           role: "system",
           content:
-            "You write short, factually accurate general-knowledge explainers for a daily curiosity app. Voice: sharp, warm, concrete, no fluff, no emoji.",
+            "You write short, factually accurate general-knowledge explainers for The Daily How app. Voice: sharp, warm, concrete, no fluff, no emoji.",
         },
         {
           role: "user",

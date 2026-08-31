@@ -19,13 +19,13 @@ export const Route = createFileRoute("/archive")({
   loader: ({ context }) => context.queryClient.ensureQueryData(archiveQuery),
   head: () => ({
     meta: [
-      { title: "Archive — every past Daily Curiosity explainer" },
+      { title: "Archive — every past explainer from The Daily How" },
       {
         name: "description",
         content:
           "Catch up on every explainer that has been featured, from how a door key works to what a credit score means.",
       },
-      { property: "og:title", content: "Archive — every past Daily Curiosity explainer" },
+      { property: "og:title", content: "Archive — every past explainer from The Daily How" },
       {
         property: "og:description",
         content: "Browse past days and read the explainers you missed.",

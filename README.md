@@ -1,4 +1,4 @@
-# Daily Curiosity AI
+# The Daily How
 
 @project:6f0f6937-db9a-4e8c-871d-c6e56cb6009f:"curious-daily-facts-ai" Create exact same project but do not connect to lovable database. Use my personal supabase project as database and auth.
 

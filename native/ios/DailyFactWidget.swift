@@ -94,7 +94,7 @@ struct DailyFactWidget: Widget {
         StaticConfiguration(kind: kind, provider: FactProvider()) { entry in
             DailyFactWidgetView(entry: entry)
         }
-        .configurationDisplayName("Daily Curiosity")
+        .configurationDisplayName("The Daily How")
         .description("Shows today's fact title.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }

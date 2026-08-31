@@ -1,6 +1,6 @@
 import { hydrate, dehydrate, type QueryClient, type Query } from "@tanstack/react-query";
 
-const STORAGE_KEY = "daily-curiosity-facts-cache-v1";
+const STORAGE_KEY = "the-daily-how-facts-cache-v1";
 const MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 const CACHEABLE_KEYS = new Set(["archive", "fact", "today-fact", "saved-facts"]);

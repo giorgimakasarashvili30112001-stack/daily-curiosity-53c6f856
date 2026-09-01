@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import React from "react";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getArchive } from "@/lib/facts.functions";
 import { FACT_GC_TIME, msUntilUtcMidnight } from "@/lib/cache-time";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 const archiveQuery = queryOptions({
   queryKey: ["archive"],
@@ -82,19 +84,161 @@ function CountdownNote() {
   );
 }
 
+interface CategoryFilterProps {
+  categories: string[];
+  selectedCategories: string[];
+  onCategoryChange: (category: string) => void;
+  onClearFilters: () => void;
+}
+
+function CategoryFilter({
+  categories,
+  selectedCategories,
+  onCategoryChange,
+  onClearFilters,
+}: CategoryFilterProps) {
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: "left" | "right") => {
+    if (containerRef.current) {
+      const scrollAmount = 200;
+      const newPosition =
+        direction === "left"
+          ? Math.max(0, scrollPosition - scrollAmount)
+          : scrollPosition + scrollAmount;
+      containerRef.current.scrollLeft = newPosition;
+      setScrollPosition(newPosition);
+    }
+  };
+
+  const hasScroll = containerRef.current && containerRef.current.scrollWidth > containerRef.current.clientWidth;
+  const showLeftArrow = scrollPosition > 0;
+  const showRightArrow = containerRef.current && scrollPosition < containerRef.current.scrollWidth - containerRef.current.clientWidth;
+
+  return (
+    <div className="mb-6">
+      {selectedCategories.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {selectedCategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => onCategoryChange(cat)}
+              className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/25"
+            >
+              {cat}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+          <button
+            onClick={onClearFilters}
+            className="text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      <div className="relative">
+        {showLeftArrow && (
+          <button
+            onClick={() => scroll("left")}
+            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background p-1.5 shadow-md transition-colors hover:bg-secondary"
+          >
+            <ChevronLeft className="h-4 w-4 text-foreground" />
+          </button>
+        )}
+
+        <div
+          ref={containerRef}
+          className="flex gap-2 overflow-x-auto scroll-smooth px-8"
+          style={{
+            scrollBehavior: "smooth",
+            msOverflowStyle: "none",
+            scrollbarWidth: "none",
+          }}
+        >
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => onCategoryChange(category)}
+              className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                selectedCategories.includes(category)
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border bg-card text-foreground hover:border-primary/50"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {showRightArrow && (
+          <button
+            onClick={() => scroll("right")}
+            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full bg-background p-1.5 shadow-md transition-colors hover:bg-secondary"
+          >
+            <ChevronRight className="h-4 w-4 text-foreground" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ArchivePage() {
   const { data = [] } = useQuery(archiveQuery);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  // Get unique categories from data
+  const categories = useMemo(() => {
+    const uniqueCategories = [...new Set(data.map((entry) => entry.category))];
+    return uniqueCategories.sort();
+  }, [data]);
+
+  // Filter data based on selected categories
+  const filteredData = useMemo(() => {
+    if (selectedCategories.length === 0) {
+      return data;
+    }
+    return data.filter((entry) => selectedCategories.includes(entry.category));
+  }, [data, selectedCategories]);
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+  };
 
   return (
     <AppShell>
       <AppHeader eyebrow="Archive" />
       <CountdownNote />
 
-      {data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nothing archived yet — come back tomorrow.</p>
+      {categories.length > 0 && (
+        <CategoryFilter
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onCategoryChange={handleCategoryChange}
+          onClearFilters={handleClearFilters}
+        />
+      )}
+
+      {filteredData.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {selectedCategories.length > 0
+            ? "No facts found in selected categories."
+            : "Nothing archived yet — come back tomorrow."}
+        </p>
       ) : (
         <ul className="space-y-3">
-          {data.map((entry) => (
+          {filteredData.map((entry) => (
             <li key={entry.pick_date}>
               <Link
                 to="/fact/$slug"

@@ -151,7 +151,7 @@ function CategoryFilter({
 
         <div
           ref={containerRef}
-          className="flex gap-2 overflow-x-auto scroll-smooth px-8"
+          className="flex gap-2 overflow-x-auto scroll-smooth"
           style={{
             scrollBehavior: "smooth",
             msOverflowStyle: "none",

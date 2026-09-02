@@ -24,7 +24,7 @@ export function useDailyReminders(lastCorrectDate?: string | null) {
 
   const sync = useCallback(
     async (next: boolean) => {
-      const result = await syncDailyReminders({ enabled: next, lastCorrectDate });
+      const result = await syncDailyReminders({ enabled: next, lastCorrectDate: lastCorrectDate ?? null });
       setStatus(result);
       return result;
     },

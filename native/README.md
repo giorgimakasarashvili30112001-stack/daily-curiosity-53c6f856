@@ -57,3 +57,17 @@ Then run from Android Studio and long-press the home screen to add the widget.
 Update the URL in three places when you move to a custom domain:
 `capacitor.config.ts`, `DailyFactWidget.kt` (`APP_ORIGIN`), and
 `DailyFactWidget.swift` (`appOrigin`).
+
+## 6. Daily reminders (local notifications)
+
+The app schedules two local reminders per day (11:00 and 19:00, device time) and
+skips them once the day's quiz is answered correctly. Toggle lives on the
+Profile tab; it only works in the native build, not the browser.
+
+After `npx cap sync`:
+
+- **Android** — the plugin adds `POST_NOTIFICATIONS` (Android 13+) and
+  `SCHEDULE_EXACT_ALARM`; verify they are present in `AndroidManifest.xml`.
+- **iOS** — in Xcode add the **Push Notifications**-free setup: no capability is
+  required for local notifications, but make sure the app is allowed to send
+  notifications when the system prompt appears on first toggle.

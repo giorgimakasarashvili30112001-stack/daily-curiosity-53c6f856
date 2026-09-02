@@ -126,6 +126,7 @@ const CATEGORIES = [
   "Technology",
   "Nature",
   "Society",
+  "General Knowledge",
 ];
 
 /** Generates new explainers with Lovable AI when the unused library runs low. */

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Coins, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { readReminderPref, syncDailyReminders } from "@/lib/notifications";
 import {
   gradeQuizAnswer,
   getDailyQuiz,
@@ -95,6 +96,12 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
       if (isSignedIn) {
         void queryClient.invalidateQueries({ queryKey: ["profile"] });
         void queryClient.invalidateQueries({ queryKey: ["quiz-stats"] });
+        if (outcome.isCorrect && readReminderPref()) {
+          // Today's streak is earned — drop the remaining reminders for today.
+          const today = new Date();
+          const key = `${today.getFullYear()}-${`${today.getMonth() + 1}`.padStart(2, "0")}-${`${today.getDate()}`.padStart(2, "0")}`;
+          void syncDailyReminders({ enabled: true, lastCorrectDate: key });
+        }
       } else {
         sessionStorage.setItem(
           storageKey(quiz.quizDate, questionIndex),

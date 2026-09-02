@@ -1,0 +1,130 @@
+import { Capacitor } from "@capacitor/core";
+
+export const REMINDER_PREF_KEY = "the-daily-how-reminders-enabled";
+
+/** Local times (24h) the reminders fire on the device. */
+const SLOTS = [11, 19] as const;
+/** How many days ahead we keep notifications scheduled. */
+const DAYS_AHEAD = 3;
+
+export type ReminderStatus =
+  | "unsupported" // running in a browser, not the native app
+  | "denied" // blocked in system settings
+  | "ready";
+
+export function isNativeApp(): boolean {
+  return Capacitor.isNativePlatform();
+}
+
+export function readReminderPref(): boolean {
+  if (typeof localStorage === "undefined") return false;
+  return localStorage.getItem(REMINDER_PREF_KEY) === "true";
+}
+
+export function writeReminderPref(enabled: boolean): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(REMINDER_PREF_KEY, enabled ? "true" : "false");
+}
+
+async function plugin() {
+  const { LocalNotifications } = await import("@capacitor/local-notifications");
+  return LocalNotifications;
+}
+
+/** Stable id per day-slot so re-scheduling replaces instead of duplicating. */
+function notificationId(date: Date, hour: number): number {
+  const day = Math.floor(date.getTime() / 86_400_000);
+  return day * 10 + (hour === SLOTS[0] ? 1 : 2);
+}
+
+function localDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = `${date.getMonth() + 1}`.padStart(2, "0");
+  const d = `${date.getDate()}`.padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+const BODIES: Record<number, { title: string; body: string }> = {
+  11: { title: "Your daily how is waiting", body: "Take a look at today's fact." },
+  19: { title: "Still time for today's how", body: "One quick read, one quick question." },
+};
+
+export async function ensurePermission(): Promise<ReminderStatus> {
+  if (!isNativeApp()) return "unsupported";
+  const LocalNotifications = await plugin();
+  let { display } = await LocalNotifications.checkPermissions();
+  if (display === "prompt" || display === "prompt-with-rationale") {
+    ({ display } = await LocalNotifications.requestPermissions());
+  }
+  return display === "granted" ? "ready" : "denied";
+}
+
+export async function cancelDailyReminders(): Promise<void> {
+  if (!isNativeApp()) return;
+  const LocalNotifications = await plugin();
+  const { notifications } = await LocalNotifications.getPending();
+  if (notifications.length) {
+    await LocalNotifications.cancel({ notifications: notifications.map((n) => ({ id: n.id })) });
+  }
+}
+
+/**
+ * Keeps the 11:00 / 19:00 reminders in sync with the user's progress.
+ * Today's remaining reminders are dropped once today's streak is earned.
+ */
+export async function syncDailyReminders(options: {
+  enabled: boolean;
+  /** Local date (YYYY-MM-DD) of the last correct answer, if any. */
+  lastCorrectDate?: string | null;
+}): Promise<ReminderStatus> {
+  if (!isNativeApp()) return "unsupported";
+
+  if (!options.enabled) {
+    await cancelDailyReminders();
+    return "ready";
+  }
+
+  const status = await ensurePermission();
+  if (status !== "ready") {
+    await cancelDailyReminders();
+    return status;
+  }
+
+  const LocalNotifications = await plugin();
+  await cancelDailyReminders();
+
+  const now = new Date();
+  const todayKey = localDateKey(now);
+  const doneToday = options.lastCorrectDate === todayKey;
+
+  const scheduled: Array<{
+    id: number;
+    title: string;
+    body: string;
+    schedule: { at: Date; allowWhileIdle: boolean };
+  }> = [];
+
+  for (let offset = 0; offset < DAYS_AHEAD; offset++) {
+    const day = new Date(now);
+    day.setDate(day.getDate() + offset);
+    if (offset === 0 && doneToday) continue;
+
+    for (const hour of SLOTS) {
+      const at = new Date(day);
+      at.setHours(hour, 0, 0, 0);
+      if (at.getTime() <= now.getTime()) continue;
+      const copy = BODIES[hour]!;
+      scheduled.push({
+        id: notificationId(day, hour),
+        title: copy.title,
+        body: copy.body,
+        schedule: { at, allowWhileIdle: true },
+      });
+    }
+  }
+
+  if (scheduled.length) {
+    await LocalNotifications.schedule({ notifications: scheduled });
+  }
+  return "ready";
+}

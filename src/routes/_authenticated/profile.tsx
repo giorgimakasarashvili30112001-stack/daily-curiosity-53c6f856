@@ -122,6 +122,8 @@ function ProfilePage() {
 
       <StreakCalendar />
 
+      <ReminderSettings lastCorrectDate={data?.lastSeenDate ?? null} />
+
       <div className="mt-5 rounded-3xl border border-border bg-card p-6">
         <label htmlFor="displayName" className="text-xs text-muted-foreground">
           Display name

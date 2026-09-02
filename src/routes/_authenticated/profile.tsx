@@ -2,7 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Coins } from "lucide-react";
+import { Bell, Coins } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useDailyReminders } from "@/hooks/useDailyReminders";
 import { StreakIcon } from "@/components/StreakIcon";
 import { StreakCalendar } from "@/components/StreakCalendar";
 import { useServerFn } from "@tanstack/react-start";
@@ -153,5 +155,55 @@ function ProfilePage() {
         Sign out
       </button>
     </AppShell>
+  );
+}
+
+function ReminderSettings({ lastCorrectDate }: { lastCorrectDate: string | null }) {
+  const { enabled, status, toggle } = useDailyReminders(lastCorrectDate);
+  const [busy, setBusy] = useState(false);
+
+  const onToggle = async () => {
+    setBusy(true);
+    try {
+      const result = await toggle(!enabled);
+      if (result === "denied") toast.error("Notifications are blocked in your system settings");
+      else if (result === "unsupported")
+        toast.info("Reminders work in the installed app, not the browser");
+      else toast.success(!enabled ? "Reminders on" : "Reminders off");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-5 rounded-3xl border border-border bg-card p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Bell className="h-4 w-4" aria-hidden="true" />
+            Daily reminders
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            A nudge at 11:00 and 19:00 — skipped once you&apos;ve answered today.
+          </p>
+        </div>
+        <Switch
+          checked={enabled}
+          disabled={busy || status === "unsupported"}
+          onCheckedChange={() => void onToggle()}
+          aria-label="Daily reminders"
+        />
+      </div>
+      {status === "unsupported" && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Available in the installed app on your phone.
+        </p>
+      )}
+      {status === "denied" && (
+        <p className="mt-3 text-xs text-destructive">
+          Notifications are blocked — enable them for The Daily How in your system settings.
+        </p>
+      )}
+    </div>
   );
 }

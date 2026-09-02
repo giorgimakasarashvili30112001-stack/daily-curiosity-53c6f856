@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Check, Coins, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { readReminderPref, syncDailyReminders } from "@/lib/notifications";
 import {
   gradeQuizAnswer,
   getDailyQuiz,

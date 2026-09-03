@@ -96,6 +96,7 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
       if (isSignedIn) {
         void queryClient.invalidateQueries({ queryKey: ["profile"] });
         void queryClient.invalidateQueries({ queryKey: ["quiz-stats"] });
+        void queryClient.invalidateQueries({ queryKey: ["streak-calendar"] });
         if (outcome.isCorrect && readReminderPref()) {
           // Today's streak is earned — drop the remaining reminders for today.
           const today = new Date();

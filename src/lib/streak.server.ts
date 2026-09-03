@@ -130,13 +130,9 @@ export async function settleStreak(
   let streakSaved = false;
   let streakLost = false;
 
-  // Anchor = last day that counted. Fall back to older data for legacy rows.
-  const candidates = [
-    row.streak_anchor,
-    lastCorrect,
-    !row.streak_anchor && !lastCorrect && streak > 0 ? row.last_seen_date : null,
-  ].filter((d): d is string => !!d);
-  let anchor = candidates.length ? candidates.slice().sort().at(-1)! : null;
+  // Anchor = last day that counted. Only correct answers can start a streak.
+  const candidates = [row.streak_anchor, lastCorrect].filter((d): d is string => !!d);
+  let anchor = lastCorrect ? candidates.slice().sort().at(-1)! : null;
 
   const persist = async () => {
     await saveProfileRow(supabase, userId, {

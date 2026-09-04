@@ -105,10 +105,15 @@ export const toggleFavorite = createServerFn({ method: "POST" })
       .from("favorites")
       .select("fact_id")
       .eq("fact_id", data.factId)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (existing) {
-      const { error } = await supabase.from("favorites").delete().eq("fact_id", data.factId);
+      const { error } = await supabase
+        .from("favorites")
+        .delete()
+        .eq("fact_id", data.factId)
+        .eq("user_id", userId);
       if (error) throw error;
       return { saved: false };
     }

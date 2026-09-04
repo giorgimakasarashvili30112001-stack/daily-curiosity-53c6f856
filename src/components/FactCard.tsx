@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck } from "lucide-react";
@@ -8,18 +8,19 @@ import { toggleFavorite, type SavedFact } from "@/lib/user.functions";
 import { ShareSheet } from "@/components/ShareSheet";
 import type { Fact } from "@/lib/facts.functions";
 
-
-export function FactCard({
-  fact,
-  dateLabel,
-  isSignedIn,
-  initiallySaved = false,
-}: {
+interface FactCardProps {
   fact: Fact;
   dateLabel?: string | undefined;
   isSignedIn: boolean;
   initiallySaved?: boolean;
-}) {
+}
+
+export const FactCard = memo(function FactCard({
+  fact,
+  dateLabel,
+  isSignedIn,
+  initiallySaved = false,
+}: FactCardProps) {
   const [saved, setSaved] = useState(initiallySaved);
 
   // Keep in sync once the saved-state query resolves after mount.
@@ -146,4 +147,12 @@ export function FactCard({
       </div>
     </article>
   );
-}
+}, (prev, next) => {
+  // Custom comparison: only rerender if these props actually change
+  return (
+    prev.fact.id === next.fact.id &&
+    prev.isSignedIn === next.isSignedIn &&
+    prev.initiallySaved === next.initiallySaved &&
+    prev.dateLabel === next.dateLabel
+  );
+});

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -44,8 +44,30 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
       fetchQuestion({ data: { factId: quiz!.factId, questionIndex } }),
   });
 
+  // Prefetch the next question for instant display (improves perceived performance)
+  const prefetchNextQuestion = useCallback(() => {
+    if (!quiz?.factId || questionIndex >= MAX_QUESTION_INDEX) return;
+    const nextIndex = questionIndex + 1;
+    void queryClient.prefetchQuery({
+      queryKey: ["quiz-question", quiz.factId, nextIndex],
+      queryFn: (): Promise<QuizQuestion | null> =>
+        fetchQuestion({ data: { factId: quiz.factId, questionIndex: nextIndex } }),
+      staleTime: Infinity,
+    });
+  }, [quiz?.factId, questionIndex, queryClient, fetchQuestion]);
+
   useEffect(() => {
     if (!quiz) return;
+    // Prefetch question 1 immediately after quiz loads
+    if (questionIndex === 0) {
+      void queryClient.prefetchQuery({
+        queryKey: ["quiz-question", quiz.factId, 1],
+        queryFn: (): Promise<QuizQuestion | null> =>
+          fetchQuestion({ data: { factId: quiz.factId, questionIndex: 1 } }),
+        staleTime: Infinity,
+      });
+    }
+  }, [quiz, questionIndex, queryClient, fetchQuestion]);
     if (isSignedIn) {
       void fetchAttempt({ data: { factId: quiz.factId } })
         .then((r) => {
@@ -133,6 +155,8 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
       }
       setQuestionIndex(nextIndex);
       setResult(null);
+      // Prefetch the next one for instant display
+      prefetchNextQuestion();
     } catch {
       toast.error("Could not load another question");
     } finally {

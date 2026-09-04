@@ -144,7 +144,14 @@ function RootComponent() {
     const { data } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      if (event !== "SIGNED_OUT") {
+        // Only invalidate user-specific queries, not facts/archive (which are shared)
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        queryClient.invalidateQueries({ queryKey: ["saved-facts"] });
+        queryClient.invalidateQueries({ queryKey: ["quiz-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["streak-calendar"] });
+        queryClient.invalidateQueries({ queryKey: ["fact-saved"] });
+      }
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);

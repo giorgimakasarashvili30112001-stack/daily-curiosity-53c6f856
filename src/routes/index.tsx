@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
@@ -61,12 +61,15 @@ function TodayPage() {
     document.documentElement.classList.add("dark");
   }, []);
 
-  const dateLabel = new Date(`${data?.date ?? ""}T00:00:00Z`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+  const dateLabel = useMemo(() => {
+    if (!data?.date) return "";
+    return new Date(`${data.date}T00:00:00Z`).toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  }, [data?.date]);
 
   return (
     <AppShell>

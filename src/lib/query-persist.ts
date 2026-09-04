@@ -64,7 +64,7 @@ export function setupFactCache(queryClient: QueryClient) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   queryClient.getQueryCache().subscribe(() => {
     if (timer) clearTimeout(timer);
-    timer = setTimeout(save, 300);
+    timer = setTimeout(save, 800); // Increased from 300ms to reduce localStorage writes
   });
 
   // SSR-hydrated data never triggers the cache subscription, so flush once

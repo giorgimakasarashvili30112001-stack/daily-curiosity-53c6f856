@@ -42,7 +42,7 @@ function calculateStreakSegments(cells: (number | null)[], marked: Set<string>, 
     // But visually: we include saved to fill gaps (so bar doesn't break)
     const isVisualPart = isMarked || isSaved;
     const weekIndex = Math.floor(i / 7);
-    const dayOfWeek = i % 7;
+
 
     // Check if we need to end the current streak (week boundary)
     if (currentStartIndex !== null) {
@@ -168,7 +168,7 @@ export function StreakCalendar() {
         {cells.map((day, i) => {
           if (day === null) return <span key={`e${i}`} />;
           const dateKey = `${key}-${String(day).padStart(2, "0")}`;
-          const isMarked = marked.has(dateKey);
+
           const isToday = dateKey === today;
           const isInStreak = streakIndices.has(i);
           const isFullWeek = fullWeekIndices.has(i);
@@ -204,10 +204,10 @@ export function StreakCalendar() {
           const isStart = i === segment.startIndex;
           const isEnd = i === segment.endIndex;
           const isSingle = isStart && isEnd;
-          const weekIndex = Math.floor(i / 7);
+
           const dayOfWeek = i % 7;
-          const startWeekIndex = Math.floor(segment.startIndex / 7);
-          const endWeekIndex = Math.floor(segment.endIndex / 7);
+
+
           const isFirstInWeek = dayOfWeek === 0; // Monday
           const isLastInWeek = dayOfWeek === 6;   // Sunday
 

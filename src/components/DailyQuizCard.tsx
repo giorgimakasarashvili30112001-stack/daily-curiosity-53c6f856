@@ -68,6 +68,9 @@ export function DailyQuizCard({ isSignedIn }: { isSignedIn: boolean }) {
       });
     }
   }, [quiz, questionIndex, queryClient, fetchQuestion]);
+
+  useEffect(() => {
+    if (!quiz) return;
     if (isSignedIn) {
       void fetchAttempt({ data: { factId: quiz.factId } })
         .then((r) => {

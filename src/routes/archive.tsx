@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useMemo, useRef } from "react";
-import React from "react";
 import { AppShell } from "@/components/AppShell";
 import { AppHeader } from "@/components/AppHeader";
 import { getArchive } from "@/lib/facts.functions";
@@ -112,7 +111,6 @@ function CategoryFilter({
     }
   };
 
-  const hasScroll = containerRef.current && containerRef.current.scrollWidth > containerRef.current.clientWidth;
   const showLeftArrow = scrollPosition > 0;
   const showRightArrow = containerRef.current && scrollPosition < containerRef.current.scrollWidth - containerRef.current.clientWidth;
 

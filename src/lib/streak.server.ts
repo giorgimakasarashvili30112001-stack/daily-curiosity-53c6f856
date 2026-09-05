@@ -147,16 +147,17 @@ export async function settleStreak(
 
   // No history: streak only starts when user answers correctly (has lastCorrect)
   if (!anchor || streak <= 0) {
-    // Only count as streak if there's a correct answer from quiz_attempts
-    if (lastCorrect) {
+    // A streak only counts while the last correct answer is today or yesterday.
+    if (lastCorrect && dayDiff(lastCorrect, today) <= 1) {
       streak = 1;
       longestStreak = Math.max(longestStreak, 1);
       anchor = lastCorrect;
     } else {
-      // No correct answers yet, streak is 0
+      // No recent correct answer, streak is 0 until one is given.
       streak = 0;
       anchor = null;
     }
+
     await persist();
     return {
       profile: row,
@@ -196,8 +197,8 @@ export async function settleStreak(
       streakSaved = true;
       changed = true;
     } else {
-      streak = 1;
-      longestStreak = Math.max(longestStreak, 1);
+      // Not enough coins: the streak is gone until a fresh correct answer.
+      streak = 0;
       streakLost = true;
       streakSaved = false;
       changed = true;
@@ -205,7 +206,8 @@ export async function settleStreak(
     }
   }
 
-  anchor = streakLost ? today : shiftDay(today, -1);
+  anchor = streakLost ? null : shiftDay(today, -1);
+
   savedDays.sort();
   if (changed) await persist();
 

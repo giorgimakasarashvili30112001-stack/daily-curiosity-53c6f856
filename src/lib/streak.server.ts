@@ -197,8 +197,8 @@ export async function settleStreak(
       streakSaved = true;
       changed = true;
     } else {
-      streak = 1;
-      longestStreak = Math.max(longestStreak, 1);
+      // Not enough coins: the streak is gone until a fresh correct answer.
+      streak = 0;
       streakLost = true;
       streakSaved = false;
       changed = true;
@@ -206,7 +206,8 @@ export async function settleStreak(
     }
   }
 
-  anchor = streakLost ? today : shiftDay(today, -1);
+  anchor = streakLost ? null : shiftDay(today, -1);
+
   savedDays.sort();
   if (changed) await persist();
 

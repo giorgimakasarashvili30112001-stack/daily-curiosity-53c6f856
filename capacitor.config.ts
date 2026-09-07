@@ -1,18 +1,22 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Native Android/iOS app configuration.
- * The app runs the built web app locally (from dist/client) without needing
- * to connect to a remote URL. This provides better offline support and faster loading.
+ * Native Android/iOS app configuration for SSR (Server-Side Rendered) app.
+ * Since this is a TanStack Start SSR app, we use server mode instead of static files.
+ * The app can still work locally with proper configuration.
  */
 const config: CapacitorConfig = {
   appId: "app.dailycuriosity",
   appName: "Daily Curiosity",
-  webDir: "dist/client",
   
-  // Run locally from dist/client instead of remote URL
+  // Point to public assets (static files like CSS, images)
+  webDir: ".output/public",
+  
+  // For SSR apps, configure server settings
   server: {
-    androidScheme: "https",  // Use https scheme for security
+    androidScheme: "https",
+    cleartext: false,
+    // Don't specify a URL - let it use the built-in server
   },
 
   // Plugins configuration

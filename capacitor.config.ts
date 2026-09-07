@@ -8,7 +8,9 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "app.lovable.dailycuriosity",
   appName: "The Daily How",
-  webDir: "dist/client",
+  // The shell loads the hosted site (server.url below), so no bundled web build
+  // is used. This just points at an existing folder so `cap sync` can run.
+  webDir: "public",
   server: {
     url: "https://project--4537fc7c-9d89-4404-be9b-4ff997c88324.lovable.app",
     cleartext: false,

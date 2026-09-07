@@ -1,19 +1,30 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * The app is server-rendered, so the native shell loads the hosted build
- * instead of a static bundle. Swap `server.url` for your published domain
- * when you go live.
+ * Native Android/iOS app configuration.
+ * The app runs the built web app locally (from dist/client) without needing
+ * to connect to a remote URL. This provides better offline support and faster loading.
  */
 const config: CapacitorConfig = {
-  appId: "app.lovable.dailycuriosity",
-  appName: "The Daily How",
-  // The shell loads the hosted site (server.url below), so no bundled web build
-  // is used. This just points at an existing folder so `cap sync` can run.
-  webDir: "public",
+  appId: "app.dailycuriosity",
+  appName: "Daily Curiosity",
+  webDir: "dist/client",
+  
+  // Run locally from dist/client instead of remote URL
   server: {
-    url: "https://project--4537fc7c-9d89-4404-be9b-4ff997c88324.lovable.app",
-    cleartext: false,
+    androidScheme: "https",  // Use https scheme for security
+  },
+
+  // Plugins configuration
+  plugins: {
+    SplashScreen: {
+      launchAutoHide: true,
+      launchShowDuration: 2000,
+      backgroundColor: "#1a1a1a",
+    },
+    CapacitorHttp: {
+      enabled: true,
+    },
   },
 };
 

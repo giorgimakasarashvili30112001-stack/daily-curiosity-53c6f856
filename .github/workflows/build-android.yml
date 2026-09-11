@@ -44,9 +44,15 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Decode signing keystore
-        if: ${{ secrets.KEYSTORE_FILE != '' }}
-        run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 -d > android/app/release.keystore
+      - name: Decode signing keystore (optional)
+        env:
+          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
+        run: |
+          if [ -n "$KEYSTORE_FILE" ]; then
+            echo "$KEYSTORE_FILE" | base64 -d > android/app/release.keystore
+          else
+            echo "No keystore secret set - release build will be unsigned."
+          fi
 
       - name: Build debug APK
         working-directory: ./android

@@ -1,25 +1,22 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Native Android/iOS app configuration for SSR (Server-Side Rendered) app.
- * Since this is a TanStack Start SSR app, we use server mode instead of static files.
- * The app can still work locally with proper configuration.
+ * Native Android/iOS shell for the server-rendered app.
+ * The shell loads the published site, so `webDir` only needs to exist.
  */
 const config: CapacitorConfig = {
-  appId: "app.dailycuriosity",
-  appName: "Daily Curiosity",
-  
-  // Point to public assets (static files like CSS, images)
-  webDir: ".output/public",
-  
-  // For SSR apps, configure server settings
+  appId: "app.lovable.dailycuriosity",
+  appName: "The Daily How",
+
+  // Not used for content (server.url wins), but Capacitor requires it to exist.
+  webDir: "public",
+
   server: {
+    url: "https://curious-daily-tales.lovable.app",
     androidScheme: "https",
     cleartext: false,
-    // Don't specify a URL - let it use the built-in server
   },
 
-  // Plugins configuration
   plugins: {
     SplashScreen: {
       launchAutoHide: true,
